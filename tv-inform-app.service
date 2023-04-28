@@ -1,0 +1,16 @@
+[Unit]
+Description=Sam's Shitty Signals for Trading
+
+[Service]
+# To change exec script on production
+ExecStart=/usr/bin/node /home/ubuntu/tradingview-informer/app.js
+Restart=on-failure
+# Note Debian/Ubuntu uses 'nogroup', RHEL/Fedora uses 'nobody'
+# User=ubuntu
+# Group=ubuntu
+Type=simple
+Environment=NODE_ENV=production
+WorkingDirectory=/home/ubuntu/tradingview-informer
+
+[Install]
+WantedBy=multi-user.target

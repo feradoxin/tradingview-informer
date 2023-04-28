@@ -1,0 +1,4 @@
+# Do not sync ENVVARs and test / backup files
+.env
+test*
+*.bak
