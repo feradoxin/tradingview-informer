@@ -1,0 +1,238 @@
+const express = require("express");
+const app = express();
+const puppeteer = require("puppeteer");
+const fs = require("fs");
+const https = require('https');
+require ('dotenv').config();
+const { Telegraf } = require("telegraf");
+
+
+// Telegram bot (@frdx_tv_sig_bot)
+const tgbot = new Telegraf(process.env.TELEGRAM_TOKEN)
+const chatId = process.env.TELEGRAM_CHATID;
+
+
+// Express server config
+https.createServer(
+    {
+        key: fs.readFileSync('/etc/letsencrypt/live/sss.akashic.tech/privkey.pem', 'utf8'),
+        cert: fs.readFileSync('/etc/letsencrypt/live/sss.akashic.tech/cert.pem'),
+        ca: fs.readFileSync('/etc/letsencrypt/live/sss.akashic.tech/chain.pem')
+    },
+    app
+).listen(443, () => {
+    console.log("HTTPS Express server running on port 443...");
+    tgbot.telegram.sendMessage(
+        chatId,
+        "Express server running.\n" +
+        "Awaiting indcator signals from Tradingview.\n\n" +
+        "<u><b>MARKETS ENABLED</b></u>\n" +
+        "<pre>[1] BINANCE:ETHBTC</pre>\n" +
+        "<pre>[2] BINANCE:ETHUSDT</pre>",
+        { parse_mode: 'HTML' }
+    );
+});
+
+app.use(express.json());
+app.use(express.static(__dirname + '/home/ubuntu/static', { dotfiles: 'allow' }));
+
+
+// Express server listen to POST (BINANCE:ETHBTC)
+let lorIndEthBtc;
+let rsiIndEthBtc;
+let emaIndEthBtc;
+
+app.post('/api/v1/ethbtc', function (req, res) {
+    var tvPayload = req.body;
+    const apiKey = tvPayload.apiKey;
+
+    if (!apiKey || apiKey !== process.env.API_KEY) {
+        res.status(401).json({error: 'unauthorised'});
+    } else {
+        if (tvPayload.lorInd !== undefined) {
+            data1 = tvPayload.lorInd;
+            lorIndEthBtc = data1;
+        };
+
+        if (tvPayload.rsiInd !== undefined) {
+            data2 = tvPayload.rsiInd;
+            rsiIndEthBtc = data2;
+        };
+
+        if (tvPayload.emaInd !== undefined) {
+            data3 = tvPayload.emaInd;
+            emaIndEthBtc = data3;
+        };
+
+        if (lorIndEthBtc === "long" && rsiIndEthBtc === "long" && emaIndEthBtc === "long") {
+            tgbot.telegram.sendMessage(
+                chatId,
+                "<u>NEW SIGNAL DETECTED</u>\n\n" +
+                "<b>Time: </b><pre>" + tvPayload.time + "</pre>\n" +
+                "<b>Market: </b><pre>" + tvPayload.market + "</pre>\n" +
+                "<b>Interval: </b><pre>" + tvPayload.interval + "</pre>\n\n" +
+                "<b>Lorentzian Classification: </b><pre>" + lorIndEthBtc + "</pre>\n" +
+                "<b>LagurreRSI Indicator: </b><pre>" + rsiIndEthBtc + "</pre>\n" +
+                "<b>EMA200 Indicator (" + tvPayload.interval + "): </b><pre>" + emaIndEthBtc + "</pre>\n\n" +
+                "<b><u>POSITION</u>: </b>" + "LONG\n\n\n" + 
+                "Chart: " + "https://www.tradingview.com/chart/Irf7pn7D/?symbol=" + tvPayload.market + "&interval=" + tvPayload.interval,
+                { parse_mode : 'HTML', disable_web_page_preview: true }
+            );
+            
+            chartScreenshot(tvPayload.market, tvPayload.interval);
+        }
+
+        if (lorIndEthBtc === "short" && rsiIndEthBtc === "short" && emaIndEthBtc === "short") {
+            tgbot.telegram.sendMessage(
+                chatId,
+                "<u>NEW SIGNAL DETECTED</u>\n\n" +
+                "<b>Time: </b><pre>" + tvPayload.time + "</pre>\n" +
+                "<b>Market: </b><pre>" + tvPayload.market + "</pre>\n" +
+                "<b>Interval: </b><pre>" + tvPayload.interval + "</pre>\n\n" +
+                "<b>Lorentzian Classification: </b><pre>" + lorIndEthBtc + "</pre>\n" +
+                "<b>LagurreRSI Indicator: </b><pre>" + rsiIndEthBtc + "</pre>\n" +
+                "<b>EMA200 Indicator (" + tvPayload.interval + "): </b><pre>" + emaIndEthBtc + "</pre>\n\n" +
+                "<b><u>POSITION</u>: </b>" + "SHORT\n\n\n" + 
+                "Chart: " + "https://www.tradingview.com/chart/Irf7pn7D/?symbol=" + tvPayload.market + "&interval=" + tvPayload.interval,
+                { parse_mode : 'HTML', disable_web_page_preview: true }
+            );
+
+            chartScreenshot(tvPayload.market, tvPayload.interval);
+        }
+
+        console.log(tvPayload)
+        
+        return res.status(200).json();
+    }
+});
+
+
+// Express server listen to POST (BINANCE:ETHUSDT)
+let lorIndEthUsdt;
+let rsiIndEthUsdt;
+let emaIndEthUsdt;
+
+app.post('/api/v1/ethusdt', function (req, res) {
+    var tvPayload = req.body;
+    const apiKey = tvPayload.apiKey;
+
+    if (!apiKey || apiKey !== process.env.API_KEY) {
+        res.status(401).json({error: 'unauthorised'});
+    } else {
+        if (tvPayload.lorInd !== undefined) {
+            data1 = tvPayload.lorInd;
+            lorIndEthUsdt = data1;
+        };
+
+        if (tvPayload.rsiInd !== undefined) {
+            data2 = tvPayload.rsiInd;
+            rsiIndEthUsdt = data2;
+        };
+
+        if (tvPayload.emaInd !== undefined) {
+            data3 = tvPayload.emaInd;
+            emaIndEthUsdt = data3;
+        };
+
+        if (lorIndEthUsdt === "long" && rsiIndEthUsdt === "long" && emaIndEthUsdt === "long") {
+            tgbot.telegram.sendMessage(
+                chatId,
+                "<u>NEW SIGNAL DETECTED</u>\n\n" +
+                "<b>Time: </b><pre>" + tvPayload.time + "</pre>\n" +
+                "<b>Market: </b><pre>" + tvPayload.market + "</pre>\n" +
+                "<b>Interval: </b><pre>" + tvPayload.interval + "</pre>\n\n" +
+                "<b>Lorentzian Classification: </b><pre>" + lorIndEthUsdt + "</pre>\n" +
+                "<b>LagurreRSI Indicator: </b><pre>" + rsiIndEthUsdt + "</pre>\n" +
+                "<b>EMA200 Indicator (" + tvPayload.interval + "): </b><pre>" + emaIndEthUsdt + "</pre>\n\n" +
+                "<b><u>POSITION</u>: </b>" + "LONG\n\n\n" + 
+                "Chart: " + "https://www.tradingview.com/chart/Irf7pn7D/?symbol=" + tvPayload.market + "&interval=" + tvPayload.interval,
+                { parse_mode : 'HTML', disable_web_page_preview: true }
+            );
+            
+            chartScreenshot(tvPayload.market, tvPayload.interval);
+        }
+
+        if (lorIndEthUsdt === "short" && rsiIndEthUsdt === "short" && emaIndEthUsdt === "short") {
+            tgbot.telegram.sendMessage(
+                chatId,
+                "<u>NEW SIGNAL DETECTED</u>\n\n" +
+                "<b>Time: </b><pre>" + tvPayload.time + "</pre>\n" +
+                "<b>Market: </b><pre>" + tvPayload.market + "</pre>\n" +
+                "<b>Interval: </b><pre>" + tvPayload.interval + "</pre>\n\n" +
+                "<b>Lorentzian Classification: </b><pre>" + lorIndEthUsdt + "</pre>\n" +
+                "<b>LagurreRSI Indicator: </b><pre>" + rsiIndEthUsdt + "</pre>\n" +
+                "<b>EMA200 Indicator (" + tvPayload.interval + "): </b><pre>" + emaIndEthUsdt + "</pre>\n\n" +
+                "<b><u>POSITION</u>: </b>" + "SHORT\n\n\n" + 
+                "Chart: " + "https://www.tradingview.com/chart/Irf7pn7D/?symbol=" + tvPayload.market + "&interval=" + tvPayload.interval,
+                { parse_mode : 'HTML', disable_web_page_preview: true }
+            );
+
+            chartScreenshot(tvPayload.market, tvPayload.interval);
+        }
+
+        console.log(tvPayload)
+        
+        return res.status(200).json();
+    }
+});
+
+
+// Screenshot function using Puppeteer
+function sleep(ms) {
+    return new Promise(res => {
+        setTimeout(res, ms);
+    })
+};
+
+async function chartScreenshot(market, interval) {
+    puppeteer
+    .launch({
+        executablePath: '/usr/bin/chromium-browser',
+        headless: false,
+        args: ["--no-sandbox", '--disable-setuid-sandbox'],
+        defaultViewport: {
+        width: 2000,
+        height: 1000,
+        }
+    })
+    .then(async (browser) => {
+        const page = await browser.newPage();
+        await page.goto("https://www.tradingview.com/chart/Irf7pn7D/?symbol=" + market + "&interval=" + interval);
+        const element = await page.$("body > div.js-rootresizer__contents.layout-with-border-radius > div.layout__area--center > div > div.chart-container-border > div > table");
+        await sleep(7500);
+        await element.screenshot({ path: "screenshot.png" });
+        await browser.close();
+    })
+    .then(() => {
+        tgbot.telegram.sendPhoto(
+            chatId, 
+            { source: "./screenshot.png" }, 
+            { caption: 'Chart Interval 4H. If you have a Tradingview Pro account, use the link above for correct intervals.' });
+    });
+}
+
+
+// Hourly updates on indicator status.
+setInterval(() => {
+    tgbot.telegram.sendMessage(
+        chatId,
+        "<u>MARKET 4-HOURLY STATUS</u>\n\n" +
+        "<b>Market: </b><pre>BINANCE:ETHBTC</pre>\n" +
+        "<b>Interval: </b><pre>4H</pre>\n\n" +
+        "<b>Lorentzian Classification: </b><pre>" + lorIndEthBtc + "</pre>\n" +
+        "<b>LagurreRSI Indicator: </b><pre>" + rsiIndEthBtc + "</pre>\n" +
+        "<b>EMA200 Indicator (1D): </b><pre>" + emaIndEthBtc + "</pre>\n\n",
+        { parse_mode : 'HTML', disable_web_page_preview: true }
+    )
+
+    tgbot.telegram.sendMessage(
+        chatId,
+        "<u>MARKET 4-HOURLY STATUS</u>\n\n" +
+        "<b>Market: </b><pre>BINANCE:ETHUSDT</pre>\n" +
+        "<b>Interval: </b><pre>4H</pre>\n\n" +
+        "<b>Lorentzian Classification: </b><pre>" + lorIndEthUsdt + "</pre>\n" +
+        "<b>LagurreRSI Indicator: </b><pre>" + rsiIndEthUsdt + "</pre>\n" +
+        "<b>EMA200 Indicator (1D): </b><pre>" + emaIndEthUsdt + "</pre>\n\n",
+        { parse_mode : 'HTML', disable_web_page_preview: true }
+    )
+}, 14400000)

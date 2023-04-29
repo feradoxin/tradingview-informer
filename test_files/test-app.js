@@ -15,9 +15,9 @@ const chatId = process.env.TELEGRAM_CHATID;
 // Express server config
 https.createServer(
     {
-        key: fs.readFileSync('/etc/letsencrypt/live/sss.akashic.tech/privkey.pem', 'utf8'),
-        cert: fs.readFileSync('/etc/letsencrypt/live/sss.akashic.tech/cert.pem'),
-        ca: fs.readFileSync('/etc/letsencrypt/live/sss.akashic.tech/chain.pem')
+        key: fs.readFileSync('./privkey.pem', 'utf8'),
+        cert: fs.readFileSync('./cert.pem'),
+        ca: fs.readFileSync('./chain.pem')
     },
     app
 ).listen(443, () => {
