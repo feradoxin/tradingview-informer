@@ -16,6 +16,8 @@ const leverageLong = 1;
 const leverageShort = 1;
 const quoteAsset = 'ETH';
 const baseAsset = 'USDT';
+const riskFactor = 1;
+const takeProfitFactor = 2;
 
 
 // // Telegram bot (@frdx_tv_sig_bot)
@@ -82,7 +84,6 @@ let binance = new ccxt.binance ({
 let balanceBase;
 let balanceQuote;
 let totalValue;
-let prevTotalValue;
 let initialValue;
 const symbol = quoteAsset + '/' + baseAsset;
 let borrowedQuoteAmount;
@@ -91,8 +92,10 @@ let signal2;
 let longPosition;
 let shortPosition;
 let fromTimestamp = binance.milliseconds() - 1800 * 1000;
+let longTpOrderId;
+let longSlOrderId;
 
-// Signal logic
+// Trading Logic
 app.post('/api/v1/' + quoteAsset + baseAsset, function (req, res) {
 	let payload = req.body;
 	let apiKey = payload.apiKey;
@@ -100,6 +103,7 @@ app.post('/api/v1/' + quoteAsset + baseAsset, function (req, res) {
 	if (!apiKey || apiKey !== process.env.APP_APIKEY) {
 		res.status(401).json({error: 'unauthorised'});
 	} else {
+		// Process signals from Tradingview
 		if (payload.lorentzian !== undefined) {
 			res.status(200).json({STATUS: 'ok'})
 			signal1 = payload.lorentzian
@@ -110,8 +114,9 @@ app.post('/api/v1/' + quoteAsset + baseAsset, function (req, res) {
 			signal2 = payload.macd
 		}
 
+		// Long signal confirmed
 		if (signal1 === 'long' && signal2 === 'long' && longPosition !== 'open') {
-			if (balanceBase > 5) {
+			if (balanceBase > 5) { // Check sufficient base balance
 				(async () => {
 					balanceBase = await binance.fetchBalance().then(res => {
 						return res.free[baseAsset];
@@ -119,8 +124,9 @@ app.post('/api/v1/' + quoteAsset + baseAsset, function (req, res) {
 					let quoteAssetPrice = await binance.fetchTicker (symbol).then(res => {
 						return res.last;
 					});
-					let ethAmount = (balanceBase * 0.975) / quoteAssetPrice;
-					binance.createMarketBuyOrder(symbol, ethAmount).then(res => {
+					let quoteAmount = binance.amountToPrecision(symbol, (balanceBase * 0.975) / quoteAssetPrice);
+					// Open long market order
+					binance.createMarketBuyOrder(symbol, quoteAmount).then(res => {
 						tgbot.telegram.sendMessage(
 							chatId,
 							"<u>OPEN LONG POSITION</u>\n\n" +
@@ -139,7 +145,6 @@ app.post('/api/v1/' + quoteAsset + baseAsset, function (req, res) {
 							balanceQuote = balances.free[quoteAsset];
 							balanceBase = balances.free[baseAsset];
 							totalValue = (balanceQuote * quoteAssetPrice) + balanceBase;
-							prevTotalValue = totalValue;
 							tgbot.telegram.sendMessage(
 								chatId,
 								"<u>BALANCES UPDATE</u>\n\n" +
@@ -150,6 +155,42 @@ app.post('/api/v1/' + quoteAsset + baseAsset, function (req, res) {
 							)
 						})
 					});
+					// Calc trade risk and create SL/TP orders
+					binance.fetchOHLCV(symbol, '5m', fromTimestamp, 6).then(res => {
+						let candleLows = [res[0][3],res[1][3],res[2][3],res[3][3],res[4][3],res[5][3]]
+						let rangeLow = candleLows.sort()[0];
+						let risk = quoteAssetPrice - rangeLow
+						let stopLossPrice = quoteAssetPrice - (risk * riskFactor)
+						let takeProfitPrice = quoteAssetPrice + (risk * takeProfitFactor)
+						let params = {
+							'symbol': quoteAsset + baseAsset,
+							'side': 'SELL',
+							'quantity': quoteAmount,
+							'price': takeProfitPrice,
+							'stopPrice': stopLossPrice,
+							'stopLimitPrice': stopLossPrice * 0.999,
+							'stopLimitTimeInForce': 'GTC'
+						}
+						binance.privatePostOrderOco(params).then(b => {
+							let slOrder = b.orderReports[0];
+							let tpOrder = b.orderReports[1];
+							longSlOrderId = slOrder.orderId;
+							longTpOrderId = tpOrder.orderId;
+							longPosition = 'open';
+							tgbot.telegram.sendMessage(
+								chatId,
+								"<u>STOP LOSS OPENED</u>\n" +
+								"<b>Order ID: </b><pre>" + longSlOrderId + "</pre>\n" + 
+								"<b>SL Price: </b><pre>" + slOrder.price + " USDT</pre>\n" +
+								"<b>Quantity: </b><pre>" + slOrder.origQty + "</pre>\n\n" + 
+								"<u>TAKE PROFIT OPENED</u>\n" +
+								"<b>Order ID: </b><pre>" + longTpOrderId + "</pre>\n" + 
+								"<b>SL Price: </b><pre>" + tpOrder.price + " USDT</pre>\n" +
+								"<b>Quantity: </b><pre>" + tpOrder.origQty + "</pre>\n\n",
+								{ parse_mode : 'HTML' }
+							)
+						})
+					})
 				}) ();
 			} else {
 				// Insufficient USDT balance, likely existing long position open.
@@ -160,75 +201,68 @@ app.post('/api/v1/' + quoteAsset + baseAsset, function (req, res) {
 					{ parse_mode : 'HTML' }
 				)
 			}
-			longPosition = 'open';
-			shortPosition = 'close';
 		}
 		
-		if (signal1 === 'short' && signal2 === 'short' && shortPosition !== 'open') {
-			console.log("OPENING SHORT");
-			shortPosition = 'open';
-			longPosition = 'close';
-		}
+		/** TO DO
+		 *  Add short trading logic and order creation with SL/TP
+		 */
+		// Short signal confirmed
+		// if (signal1 === 'short' && signal2 === 'short' && shortPosition !== 'open') {
+		// 	console.log("OPENING SHORT");
+		// 	shortPosition = 'open';
+		// 	longPosition = 'close';
+		// }
 	}
 })
 
+setInterval(() => {
+	if (longPosition === 'open') {
+		binance.fetchOrder(longTpOrderId, symbol).then(a => {
+			if (a.status === 'closed') {
+				longPosition = 'closed'
+				binance.fetchBalance().then(balances => {
+					balanceQuote = balances.free[quoteAsset];
+					balanceBase = balances.free[baseAsset];
+					totalValue = (balanceQuote * a.price) + balanceBase;
+					let pnl = parseFloat((totalValue - initialValue) / initialValue * 100).toFixed(2);
+					tgbot.telegram.sendMessage(
+						chatId,
+						"<u>TAKE PROFIT TRIGGERED</u>\n" +
+						"<b>TP Price: </b><pre>" + a.price + "</pre>\n" +
+						"<b>Trigger Time: </b><pre>" + a.datetime + "</pre>\n\n" +
+						"<u>BALANCES UPDATE</u>\n" +
+						"<b>ETH: </b><pre>" + balanceQuote + "</pre>\n" +
+						"<b>USDT: </b><pre>" + balanceBase + "</pre>\n\n" +
+						"<b>Total Value: </b><pre>" + totalValue + "</pre>\n\n" +
+						"<b>P&L: </b>" + pnl + "%",
+						{ parse_mode : 'HTML' }
+					)
+				})
+			}
 
-// (async () => {
-// 	binance.fetchOHLCV(symbol, '5m', fromTimestamp, 6).then(res => {
-// 		console.log(res)
-// 		let candleLows = [res[1][3],res[2][3],res[3][3],res[4][3],res[5][3]]
-// 		let rangeLow = candleLows.sort()[0];
-// 		let price = binance.fetchTicker(symbol).then(res => {
-// 			let price = res.last;
-// 			let risk = price - rangeLow;
-// 			let stopLoss = price - risk;
-// 			let takeProfit = price + (risk * 2);
-// 			console.log("Risk Val: " + risk);
-// 			console.log("ETH/USDT: " + price);
-// 			console.log("Take Profit: " + takeProfit);
-// 			console.log("Stop Loss: " + stopLoss)
-// 		})
-// 	})
-// })
-
-
-
-// // Shorting
-// // Global var
-// let borrowedEthAmt = 0.0055;
-
-// // Open short
-// (async () => {
-// 	const marginMode = 'isolated';
-// 	const marginBalance = await binance.fetchBalance({ 'defaultType': 'margin', 'marginMode': marginMode }).then(res => {
-// 		return res[symbol]['USDT']['free'];
-// 	})
-// 	const orderPrice = undefined;
-// 	const quoteAssetPrice = await binance.fetchTicker(symbol).then(res => {
-// 		return res.last;
-// 	})
-// 	// borrowedEthAmt = parseFloat((marginBalance * 0.8) / quoteAssetPrice).toFixed(4);
-// 	console.log('Margin Bal.: ' + marginBalance + ' USDT');
-// 	console.log('ETH Price: ' + quoteAssetPrice + ' USDT');
-// 	console.log('ETH Amount: ' + borrowedEthAmt + ' ETH');
-// 	binance.borrowMargin('ETH', borrowedEthAmt, symbol, { 'marginMode': marginMode }).then(res => {
-// 		console.log(res)
-// 	});
-// 	binance.createOrder(symbol, 'market', 'sell', borrowedEthAmt, orderPrice, { 'marginMode': marginMode }).then(res => {
-// 		console.log(res);
-// 	})
-// }) ();
-
-// // Close short
-// (async () => {
-// 	const marginMode ='isolated';
-// 	const orderPrice = undefined;
-// 	binance.createOrder(symbol, 'market', 'buy', borrowedEthAmt, orderPrice, { 'marginMode': marginMode }).then(res => {
-// 		console.log(res);
-// 	});
-// 	binance.repayMargin('ETH', borrowedEthAmt, symbol, { 'marginMode': marginMode }).then(res => {
-// 		console.log(res)
-// 	});
-// }) ();
-
-// binance.fetchPositions()
+			if (a.status === 'expired') {
+				binance.fetchOrder(longSlOrderId, symbol).then(b => {
+					longPosition = 'closed'
+					binance.fetchBalance().then(balances => {
+						balanceQuote = balances.free[quoteAsset];
+						balanceBase = balances.free[baseAsset];
+						totalValue = (balanceQuote * b.price) + balanceBase;
+						let pnl = parseFloat((totalValue - initialValue) / initialValue * 100).toFixed(2);
+						tgbot.telegram.sendMessage(
+							chatId,
+							"<u>STOP LOSS TRIGGERED</u>\n" +
+							"<b>SL Price: </b><pre>" + b.price + "</pre>\n" +
+							"<b>Trigger Time: </b><pre>" + b.datetime + "</pre>\n\n" +
+							"<u>BALANCES UPDATE</u>\n" +
+							"<b>ETH: </b><pre>" + balanceQuote + "</pre>\n" +
+							"<b>USDT: </b><pre>" + balanceBase + "</pre>\n\n" +
+							"<b>Total Value: </b><pre>" + totalValue + "</pre>\n\n" +
+							"<b>P&L: </b>" + pnl + "%",
+							{ parse_mode : 'HTML' }
+						)
+					})
+				})
+			}
+		})
+	}
+}, 10000)

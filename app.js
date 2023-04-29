@@ -6,8 +6,21 @@ require ('dotenv').config();
 const { Telegraf } = require("telegraf");
 const ccxt = require("ccxt");
 
+/** TRADE SETTINGS
+ * Change the following to suit your trade market.
+ * Leverage long/short param: margin leverage level
+ * Quote Asset: Asset to buy/sell, e.g. ETH, BTC, BAT
+ * Base Asset: Currency used to buy/sell, e.g. USDT, USDC, BTC
+ */
+const leverageLong = 1;
+const leverageShort = 1;
+const quoteAsset = 'ETH';
+const baseAsset = 'USDT';
+const riskFactor = 1;
+const takeProfitFactor = 2;
 
-// Telegram bot (@frdx_tv_sig_bot)
+
+// // Telegram bot (@frdx_tv_sig_bot)
 const tgbot = new Telegraf(process.env.TELEGRAM_TOKEN)
 const chatId = process.env.TELEGRAM_CHATID;
 
@@ -32,18 +45,18 @@ https.createServer(
         { parse_mode : 'HTML' , disable_web_page_preview : true }
     );
 	// Initial balance update to global vars
-	binance.fetchBalance ().then(balances => {
-		binance.fetchTicker ('ETH/USDT').then(res => {
-			let ethPrice = res.last;
-			balanceETH = balances.free.ETH;
-			balanceUSDT = balances.free.USDT;
-			initialVal = balanceUSDT + (balanceETH * ethPrice);
+	binance.fetchBalance().then(balances => {
+		binance.fetchTicker (symbol).then(res => {
+			let quoteAssetPrice = res.last;
+			balanceQuote = balances.free[quoteAsset];
+			balanceBase = balances.free[baseAsset];
+			initialValue = balanceBase + (balanceQuote * quoteAssetPrice);
 			tgbot.telegram.sendMessage(
 				chatId,
 				"<u>CURRENT BALANCES</u>\n\n" +
-				"<b>ETH: </b><pre>" + balanceETH + "</pre>\n" +
-				"<b>USDT: </b><pre>" + balanceUSDT + "</pre>\n\n" +
-				"<b>Initial Value: </b>" + initialVal + " USD",
+				"<b>ETH: </b><pre>" + balanceQuote + "</pre>\n" +
+				"<b>USDT: </b><pre>" + balanceBase + "</pre>\n\n" +
+				"<b>Initial Value: </b>" + initialValue + " USD",
 				{ parse_mode : 'HTML' }
 			)
 		});
@@ -54,7 +67,6 @@ app.use(express.json());
 app.use(express.static(__dirname + '/home/ubuntu/static', { dotfiles: 'allow' }));
 
 // Instantiate exchange (Binance)
-// Replace BINANCE_* with BINANCE_TEST_* for testnet/sandbox.
 let binance = new ccxt.binance ({
 	'apiKey': process.env.BINANCE_APIKEY,
 	'secret': process.env.BINANCE_SECRET,
@@ -68,37 +80,56 @@ let binance = new ccxt.binance ({
 // Generate testnet keys at https://testnet.binance.vision/
 // binance.setSandboxMode (true);
 
-// Global vars
-let balanceUSDT;
-let balanceETH;
-let totalVal;
-let prevTotalVal;
-let initialVal;
+// Trading logic global vars
+let balanceBase;
+let balanceQuote;
+let totalValue;
+let initialValue;
+const symbol = quoteAsset + '/' + baseAsset;
+let borrowedQuoteAmount;
+let signal1;
+let signal2;
+let longPosition;
+let shortPosition;
+let fromTimestamp = binance.milliseconds() - 1800 * 1000;
+let longTpOrderId;
+let longSlOrderId;
 
-// ETHUSDT Long logic
-app.post('/api/v1/long/ethusdt', function (req, res) {
+// Trading Logic
+app.post('/api/v1/' + quoteAsset + baseAsset, function (req, res) {
 	let payload = req.body;
 	let apiKey = payload.apiKey;
 	
 	if (!apiKey || apiKey !== process.env.APP_APIKEY) {
 		res.status(401).json({error: 'unauthorised'});
 	} else {
-		if (payload.signal === "open") {
-			// Open long if USDT balance sufficient
-			if (balanceUSDT > 5) {
+		// Process signals from Tradingview
+		if (payload.lorentzian !== undefined) {
+			res.status(200).json({STATUS: 'ok'})
+			signal1 = payload.lorentzian
+		}
+
+		if (payload.macd !== undefined) {
+			res.status(200).json({STATUS: 'ok'})
+			signal2 = payload.macd
+		}
+
+		// Long signal confirmed
+		if (signal1 === 'long' && signal2 === 'long' && longPosition !== 'open') {
+			if (balanceBase > 5) { // Check sufficient base balance
 				(async () => {
-					let symbol = "ETH/USDT";
-					balanceUSDT = await binance.fetchBalance ().then(res => {
-						return res.free.USDT;
+					balanceBase = await binance.fetchBalance().then(res => {
+						return res.free[baseAsset];
 					});
-					let ethPrice = await binance.fetchTicker ('ETH/USDT').then(res => {
+					let quoteAssetPrice = await binance.fetchTicker (symbol).then(res => {
 						return res.last;
 					});
-					let ethAmount = (balanceUSDT * 0.975) / ethPrice;
-					binance.createMarketBuyOrder(symbol, ethAmount).then(res => {
+					let quoteAmount = binance.amountToPrecision(symbol, (balanceBase * 0.975) / quoteAssetPrice);
+					// Open long market order
+					binance.createMarketBuyOrder(symbol, quoteAmount).then(res => {
 						tgbot.telegram.sendMessage(
 							chatId,
-							"<u>TRADE EXECUTED</u>\n\n" +
+							"<u>OPEN LONG POSITION</u>\n\n" +
 							"<b>Market: </b><pre>" + res.symbol + "</pre>\n" +
 							"<b>Type: </b><pre>" + res.info.type + "</pre>\n" +
 							"<b>Side: </b><pre>" + res.info.side + "</pre>\n" +
@@ -110,87 +141,128 @@ app.post('/api/v1/long/ethusdt', function (req, res) {
 							"Chart: https://www.tradingview.com/chart/w9Jx4CUu/",
 							{ parse_mode : 'HTML' , disable_web_page_preview : true }
 						)
-						binance.fetchBalance ().then(balances => {
-							balanceETH = balances.free.ETH;
-							balanceUSDT = balances.free.USDT;
-							totalVal = (balanceETH * ethPrice) + balanceUSDT;
-							prevTotalVal = totalVal;
+						binance.fetchBalance().then(balances => {
+							balanceQuote = balances.free[quoteAsset];
+							balanceBase = balances.free[baseAsset];
+							totalValue = (balanceQuote * quoteAssetPrice) + balanceBase;
 							tgbot.telegram.sendMessage(
 								chatId,
 								"<u>BALANCES UPDATE</u>\n\n" +
-								"<b>ETH: </b><pre>" + balanceETH + "</pre>\n" +
-								"<b>USDT: </b><pre>" + balanceUSDT + "</pre>\n\n" +
-								"<b>Total Value: </b><pre>" + totalVal + "</pre>",
+								"<b>ETH: </b><pre>" + balanceQuote + "</pre>\n" +
+								"<b>USDT: </b><pre>" + balanceBase + "</pre>\n\n" +
+								"<b>Total Value: </b><pre>" + totalValue + "</pre>",
 								{ parse_mode : 'HTML' }
 							)
 						})
 					});
+					// Calc trade risk and create SL/TP orders
+					binance.fetchOHLCV(symbol, '5m', fromTimestamp, 6).then(res => {
+						let candleLows = [res[0][3],res[1][3],res[2][3],res[3][3],res[4][3],res[5][3]]
+						let rangeLow = candleLows.sort()[0];
+						let risk = quoteAssetPrice - rangeLow
+						let stopLossPrice = quoteAssetPrice - (risk * riskFactor)
+						let takeProfitPrice = quoteAssetPrice + (risk * takeProfitFactor)
+						let params = {
+							'symbol': quoteAsset + baseAsset,
+							'side': 'SELL',
+							'quantity': quoteAmount,
+							'price': takeProfitPrice,
+							'stopPrice': stopLossPrice,
+							'stopLimitPrice': stopLossPrice * 0.999,
+							'stopLimitTimeInForce': 'GTC'
+						}
+						binance.privatePostOrderOco(params).then(b => {
+							let slOrder = b.orderReports[0];
+							let tpOrder = b.orderReports[1];
+							longSlOrderId = slOrder.orderId;
+							longTpOrderId = tpOrder.orderId;
+							longPosition = 'open';
+							tgbot.telegram.sendMessage(
+								chatId,
+								"<u>STOP LOSS OPENED</u>\n" +
+								"<b>Order ID: </b><pre>" + longSlOrderId + "</pre>\n" + 
+								"<b>SL Price: </b><pre>" + slOrder.price + " USDT</pre>\n" +
+								"<b>Quantity: </b><pre>" + slOrder.origQty + "</pre>\n\n" + 
+								"<u>TAKE PROFIT OPENED</u>\n" +
+								"<b>Order ID: </b><pre>" + longTpOrderId + "</pre>\n" + 
+								"<b>SL Price: </b><pre>" + tpOrder.price + " USDT</pre>\n" +
+								"<b>Quantity: </b><pre>" + tpOrder.origQty + "</pre>\n\n",
+								{ parse_mode : 'HTML' }
+							)
+						})
+					})
 				}) ();
 			} else {
 				// Insufficient USDT balance, likely existing long position open.
 				tgbot.telegram.sendMessage(
 					chatId,
 					"<u>TRADE FAILED</u>\n\n" +
-					"Long position active. Current balance is " + balanceUSDT + " USDT. Awaiting close signal.\n\n",
+					"Long position active. Current balance is " + balanceBase + " USDT. Awaiting close signal.\n\n",
 					{ parse_mode : 'HTML' }
 				)
 			}
 		}
-
-		if (payload.signal === "close" && balanceETH > 0.001) {
-			if (balanceETH > 0.001) {
-				// Close long position if ETH balance sufficient.
-				(async () => {
-					let symbol = "ETH/USDT";
-					let ethAmount = await binance.fetchBalance ().then(res => {
-						return res.free.ETH;
-					});
-					let ethPrice = await binance.fetchTicker ('ETH/USDT').then(res => {
-						return res.last;
-					});
-					binance.createMarketSellOrder(symbol, ethAmount).then(res => {
-						tgbot.telegram.sendMessage(
-							chatId,
-							"<u>TRADE EXECUTED</u>\n\n" +
-							"<b>Market: </b><pre>" + res.symbol + "</pre>\n" +
-							"<b>Type: </b><pre>" + res.info.type + "</pre>\n" +
-							"<b>Side: </b><pre>" + res.info.side + "</pre>\n" +
-							"<b>TradeID: </b><pre>" + res.clientOrderId + "</pre>\n" +
-							"<b>Execution Timestamp: </b><pre>" + res.datetime + "</pre>\n" +
-							"<b>Status: </b><pre>" + res.info.status + "</pre>\n" +
-							"<b>Price: </b><pre>" + res.price + " USDT</pre>\n" +
-							"<b>Quantity: </b><pre>" + res.filled + " ETH</pre>\n\n" +
-							"Chart: https://www.tradingview.com/chart/w9Jx4CUu/",
-							{ parse_mode : 'HTML' , disable_web_page_preview : true }
-						)
-						binance.fetchBalance ().then(balances => {
-							balanceETH = balances.free.ETH;
-							balanceUSDT = balances.free.USDT;
-							totalVal = (balanceETH * ethPrice) + balanceUSDT;
-							let pnl = parseFloat((totalVal - prevTotalVal) / prevTotalVal * 100).toFixed(2);
-							let totalPnl = parseFloat((totalVal - initialVal) / initialVal * 100).toFixed(2);
-							tgbot.telegram.sendMessage(
-								chatId,
-								"<u>BALANCES UPDATE</u>\n\n" +
-								"<b>ETH: </b><pre>" + balanceETH + "</pre>\n" +
-								"<b>USDT: </b><pre>" + balanceUSDT + "</pre>\n\n" +
-								"<b>Total Value: </b><pre>" + totalVal + "</pre>\n\n" +
-								"<b>Trade P&L: </b>" + pnl + "%\n" +
-								"<b>Total P&L: </b>" + totalPnl + "%",
-								{ parse_mode : 'HTML' }
-							)
-						})
-					});
-				}) ();
-			} else {
-				// Insufficient ETH balance, likely no existing long position.
-				tgbot.telegram.sendMessage(
-					chatId,
-					"<u>TRADE FAILED</u>\n\n" +
-					"No long position active. Current balance is " + balanceETH + " ETH. Awaiting next long signal.\n\n",
-					{ parse_mode : 'HTML' }
-				)
-			}
-		}
+		
+		/** TO DO
+		 *  Add short trading logic and order creation with SL/TP
+		 */
+		// Short signal confirmed
+		// if (signal1 === 'short' && signal2 === 'short' && shortPosition !== 'open') {
+		// 	console.log("OPENING SHORT");
+		// 	shortPosition = 'open';
+		// 	longPosition = 'close';
+		// }
 	}
 })
+
+setInterval(() => {
+	if (longPosition === 'open') {
+		binance.fetchOrder(longTpOrderId, symbol).then(a => {
+			if (a.status === 'closed') {
+				longPosition = 'closed'
+				binance.fetchBalance().then(balances => {
+					balanceQuote = balances.free[quoteAsset];
+					balanceBase = balances.free[baseAsset];
+					totalValue = (balanceQuote * a.price) + balanceBase;
+					let pnl = parseFloat((totalValue - initialValue) / initialValue * 100).toFixed(2);
+					tgbot.telegram.sendMessage(
+						chatId,
+						"<u>TAKE PROFIT TRIGGERED</u>\n" +
+						"<b>TP Price: </b><pre>" + a.price + "</pre>\n" +
+						"<b>Trigger Time: </b><pre>" + a.datetime + "</pre>\n\n" +
+						"<u>BALANCES UPDATE</u>\n" +
+						"<b>ETH: </b><pre>" + balanceQuote + "</pre>\n" +
+						"<b>USDT: </b><pre>" + balanceBase + "</pre>\n\n" +
+						"<b>Total Value: </b><pre>" + totalValue + "</pre>\n\n" +
+						"<b>P&L: </b>" + pnl + "%",
+						{ parse_mode : 'HTML' }
+					)
+				})
+			}
+
+			if (a.status === 'expired') {
+				binance.fetchOrder(longSlOrderId, symbol).then(b => {
+					longPosition = 'closed'
+					binance.fetchBalance().then(balances => {
+						balanceQuote = balances.free[quoteAsset];
+						balanceBase = balances.free[baseAsset];
+						totalValue = (balanceQuote * b.price) + balanceBase;
+						let pnl = parseFloat((totalValue - initialValue) / initialValue * 100).toFixed(2);
+						tgbot.telegram.sendMessage(
+							chatId,
+							"<u>STOP LOSS TRIGGERED</u>\n" +
+							"<b>SL Price: </b><pre>" + b.price + "</pre>\n" +
+							"<b>Trigger Time: </b><pre>" + b.datetime + "</pre>\n\n" +
+							"<u>BALANCES UPDATE</u>\n" +
+							"<b>ETH: </b><pre>" + balanceQuote + "</pre>\n" +
+							"<b>USDT: </b><pre>" + balanceBase + "</pre>\n\n" +
+							"<b>Total Value: </b><pre>" + totalValue + "</pre>\n\n" +
+							"<b>P&L: </b>" + pnl + "%",
+							{ parse_mode : 'HTML' }
+						)
+					})
+				})
+			}
+		})
+	}
+}, 10000)
