@@ -165,10 +165,10 @@ app.post('/api/v1/' + quoteAsset + baseAsset, function (req, res) {
 						let params = {
 							'symbol': quoteAsset + baseAsset,
 							'side': 'SELL',
-							'quantity': binance.amountToPrecision(quoteAmount),
-							'price': binance.priceToPrecision(takeProfitPrice),
-							'stopPrice': binance.priceToPrecision(stopLossPrice),
-							'stopLimitPrice': binance.priceToPrecision(stopLossPrice * 0.999),
+							'quantity': binance.amountToPrecision(symbol, quoteAmount),
+							'price': binance.priceToPrecision(symbol, takeProfitPrice),
+							'stopPrice': binance.priceToPrecision(symbol, stopLossPrice),
+							'stopLimitPrice': binance.priceToPrecision(symbol, stopLossPrice * 0.999),
 							'stopLimitTimeInForce': 'GTC'
 						}
 						binance.privatePostOrderOco(params).then(b => {
