@@ -187,7 +187,7 @@ app.post('/api/v1/' + quoteAsset + baseAsset, function (req, res) {
 										"<b>Quantity: </b><pre>" + slOrder.origQty + "</pre>\n\n" + 
 										"<u>TAKE PROFIT OPENED</u>\n" +
 										"<b>Order ID: </b><pre>" + longTpOrderId + "</pre>\n" + 
-										"<b>SL Price: </b><pre>" + tpOrder.price + " USDT</pre>\n" +
+										"<b>TP Price: </b><pre>" + tpOrder.price + " USDT</pre>\n" +
 										"<b>Quantity: </b><pre>" + tpOrder.origQty + "</pre>\n\n",
 										{ parse_mode : 'HTML' }
 									)
