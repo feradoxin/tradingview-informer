@@ -221,7 +221,7 @@ app.post('/api/v1/' + quoteAsset + baseAsset, function (req, res) {
 
 setInterval(() => {
 	binance.fetchBalance().then(balances => {
-		balanceBase = balances.free[balanceBase]
+		balanceBase = balances.free[baseAsset]
 	})
 	if (longPosition === 'open') {
 		binance.fetchOrder(longTpOrderId, symbol).then(a => {
