@@ -177,6 +177,10 @@ app.post('/api/v1/' + quoteAsset + baseAsset, function (req, res) {
 									longPosition = 'open';
 									tgbot.telegram.sendMessage(
 										chatId,
+										"<u>SL/TP PARAMS</u>\n" +
+										"<b>Risk: </b><pre>" + risk + "</pre>\n" + 
+										"<b>SL Factor: </b><pre>" + riskFactor + "</pre>\n" +
+										"<b>TP Factor: </b><pre>" + takeProfitFactor + "</pre>\n\n" +
 										"<u>STOP LOSS OPENED</u>\n" +
 										"<b>Order ID: </b><pre>" + longSlOrderId + "</pre>\n" + 
 										"<b>SL Price: </b><pre>" + slOrder.price + " USDT</pre>\n" +
@@ -216,6 +220,9 @@ app.post('/api/v1/' + quoteAsset + baseAsset, function (req, res) {
 })
 
 setInterval(() => {
+	binance.fetchBalance().then(balances => {
+		balanceBase = balances.free[balanceBase]
+	})
 	if (longPosition === 'open') {
 		binance.fetchOrder(longTpOrderId, symbol).then(a => {
 			if (a.status === 'closed') {
