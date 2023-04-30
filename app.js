@@ -153,44 +153,44 @@ app.post('/api/v1/' + quoteAsset + baseAsset, function (req, res) {
 								"<b>Total Value: </b><pre>" + totalValue + "</pre>",
 								{ parse_mode : 'HTML' }
 							)
+							// Calc trade risk and create SL/TP orders
+							binance.fetchOHLCV(symbol, '5m', fromTimestamp, 6).then(a => {
+								let candleLows = [a[0][3],a[1][3],a[2][3],a[3][3],a[4][3],a[5][3]]
+								let rangeLow = candleLows.sort()[0];
+								let risk = quoteAssetPrice - rangeLow
+								let stopLossPrice = quoteAssetPrice - (risk * riskFactor)
+								let takeProfitPrice = quoteAssetPrice + (risk * takeProfitFactor)
+								let params = {
+									'symbol': quoteAsset + baseAsset,
+									'side': 'SELL',
+									'quantity': binance.amountToPrecision(symbol, quoteAmount),
+									'price': binance.priceToPrecision(symbol, takeProfitPrice),
+									'stopPrice': binance.priceToPrecision(symbol, stopLossPrice),
+									'stopLimitPrice': binance.priceToPrecision(symbol, stopLossPrice * 0.999),
+									'stopLimitTimeInForce': 'GTC'
+								}
+								binance.privatePostOrderOco(params).then(b => {
+									let slOrder = b.orderReports[0];
+									let tpOrder = b.orderReports[1];
+									longSlOrderId = slOrder.orderId;
+									longTpOrderId = tpOrder.orderId;
+									longPosition = 'open';
+									tgbot.telegram.sendMessage(
+										chatId,
+										"<u>STOP LOSS OPENED</u>\n" +
+										"<b>Order ID: </b><pre>" + longSlOrderId + "</pre>\n" + 
+										"<b>SL Price: </b><pre>" + slOrder.price + " USDT</pre>\n" +
+										"<b>Quantity: </b><pre>" + slOrder.origQty + "</pre>\n\n" + 
+										"<u>TAKE PROFIT OPENED</u>\n" +
+										"<b>Order ID: </b><pre>" + longTpOrderId + "</pre>\n" + 
+										"<b>SL Price: </b><pre>" + tpOrder.price + " USDT</pre>\n" +
+										"<b>Quantity: </b><pre>" + tpOrder.origQty + "</pre>\n\n",
+										{ parse_mode : 'HTML' }
+									)
+								})
+							})
 						})
 					});
-					// Calc trade risk and create SL/TP orders
-					binance.fetchOHLCV(symbol, '5m', fromTimestamp, 6).then(res => {
-						let candleLows = [res[0][3],res[1][3],res[2][3],res[3][3],res[4][3],res[5][3]]
-						let rangeLow = candleLows.sort()[0];
-						let risk = quoteAssetPrice - rangeLow
-						let stopLossPrice = quoteAssetPrice - (risk * riskFactor)
-						let takeProfitPrice = quoteAssetPrice + (risk * takeProfitFactor)
-						let params = {
-							'symbol': quoteAsset + baseAsset,
-							'side': 'SELL',
-							'quantity': binance.amountToPrecision(symbol, quoteAmount),
-							'price': binance.priceToPrecision(symbol, takeProfitPrice),
-							'stopPrice': binance.priceToPrecision(symbol, stopLossPrice),
-							'stopLimitPrice': binance.priceToPrecision(symbol, stopLossPrice * 0.999),
-							'stopLimitTimeInForce': 'GTC'
-						}
-						binance.privatePostOrderOco(params).then(b => {
-							let slOrder = b.orderReports[0];
-							let tpOrder = b.orderReports[1];
-							longSlOrderId = slOrder.orderId;
-							longTpOrderId = tpOrder.orderId;
-							longPosition = 'open';
-							tgbot.telegram.sendMessage(
-								chatId,
-								"<u>STOP LOSS OPENED</u>\n" +
-								"<b>Order ID: </b><pre>" + longSlOrderId + "</pre>\n" + 
-								"<b>SL Price: </b><pre>" + slOrder.price + " USDT</pre>\n" +
-								"<b>Quantity: </b><pre>" + slOrder.origQty + "</pre>\n\n" + 
-								"<u>TAKE PROFIT OPENED</u>\n" +
-								"<b>Order ID: </b><pre>" + longTpOrderId + "</pre>\n" + 
-								"<b>SL Price: </b><pre>" + tpOrder.price + " USDT</pre>\n" +
-								"<b>Quantity: </b><pre>" + tpOrder.origQty + "</pre>\n\n",
-								{ parse_mode : 'HTML' }
-							)
-						})
-					})
 				}) ();
 			} else {
 				// Insufficient USDT balance, likely existing long position open.
