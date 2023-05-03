@@ -45,23 +45,6 @@ https.createServer(
         { parse_mode : 'HTML' , disable_web_page_preview : true }
     );
 	// Initial balance update to global vars
-	binance.fetchBalance().then(balances => {
-		binance.fetchTicker(symbol).then(b => {
-			let quoteAssetPrice = b.last;
-			balanceQuote = balances.free[quoteAsset];
-			balanceBase = balances.free[baseAsset];
-			initialValue = balanceBase + (balanceQuote * quoteAssetPrice);
-			tgbot.telegram.sendMessage(
-				chatId,
-				"<u>CURRENT BALANCES</u>\n\n" +
-				"<b>ETH: </b><pre>" + balanceQuote + "</pre>\n" +
-				"<b>USDT: </b><pre>" + balanceBase + "</pre>\n\n" +
-				"<b>Initial Value: </b>" + initialValue + " USD",
-				{ parse_mode : 'HTML' }
-			)
-		});
-	});
-
 	binance.fetchBalance({ 'marginMode' : marginMode }).then(marginBalance => {
 		binance.fetchBalance().then(spotBalance => {
 			binance.fetchTicker(symbol).then(a => {
@@ -359,7 +342,7 @@ setInterval(() => {
 		balanceBase = balances.free[baseAsset]
 	})
 	binance.fetchBalance({ 'marginMode' : marginMode }).then(balances => {
-		marginBalanceBase = c[symbol].free[baseAsset]
+		marginBalanceBase = balances[symbol].free[baseAsset]
 	})
 
 	// Check for active long positions
