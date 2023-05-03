@@ -91,7 +91,6 @@ let signal1;
 let signal2;
 let longPosition;
 let shortPosition;
-let fromTimestamp = binance.milliseconds() - 1800 * 1000;
 let longTpOrderId;
 let longSlOrderId;
 
@@ -154,6 +153,7 @@ app.post('/api/v1/' + quoteAsset + baseAsset, function (req, res) {
 								{ parse_mode : 'HTML' }
 							)
 							// Calc trade risk and create SL/TP orders
+							let fromTimestamp = binance.milliseconds() - 1800 * 1000;
 							binance.fetchOHLCV(symbol, '5m', fromTimestamp, 6).then(a => {
 								let candleLows = [a[0][3],a[1][3],a[2][3],a[3][3],a[4][3],a[5][3]]
 								let rangeLow = candleLows.sort()[0];
@@ -166,7 +166,7 @@ app.post('/api/v1/' + quoteAsset + baseAsset, function (req, res) {
 									'quantity': binance.amountToPrecision(symbol, quoteAmount),
 									'price': binance.priceToPrecision(symbol, takeProfitPrice),
 									'stopPrice': binance.priceToPrecision(symbol, stopLossPrice),
-									'stopLimitPrice': binance.priceToPrecision(symbol, stopLossPrice * 0.999),
+									'stopLimitPrice': binance.priceToPrecision(symbol, stopLossPrice * 0.9995),
 									'stopLimitTimeInForce': 'GTC'
 								}
 								binance.privatePostOrderOco(params).then(b => {
