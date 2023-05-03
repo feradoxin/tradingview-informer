@@ -62,14 +62,14 @@ https.createServer(
 
 				tgbot.telegram.sendMessage(
 					chatId,
-					"<u>INITIAL SPOT BALANCES</u>\n\n" +
+					"<u>INITIAL SPOT BALANCES</u>\n" +
 					"<b>ETH: </b><pre>" + balanceQuote + "</pre>\n" +
 					"<b>USDT: </b><pre>" + balanceBase + "</pre>\n" +
-					"<b>Initial Value: </b>" + initialValue + " USD\n\n" +
-					"<u>INITIAL MARGIN BALANCES</u>\n\n" +
+					"<b>Initial Value: </b><pre>" + initialValue + " USDT</pre>\n\n" +
+					"<u>INITIAL MARGIN BALANCES</u>\n" +
 					"<b>ETH: </b><pre>" + marginBalanceQuote + "</pre>\n" +
 					"<b>USDT: </b><pre>" + marginBalanceBase + "</pre>\n" +
-					"<b>Initial Value: </b>" + marginInitialValue + " USD\n\n",
+					"<b>Initial Value: </b><pre>" + marginInitialValue + " USDT</pre>\n\n",
 					{ parse_mode : 'HTML' }
 				)
 			});
@@ -200,9 +200,9 @@ app.post('/api/v1/' + quoteAsset + baseAsset, function (req, res) {
 										"<b>Order ID: </b><pre>" + longTpOrderId + "</pre>\n" + 
 										"<b>TP Price: </b><pre>" + tpOrder.price + " USDT</pre>\n" +
 										"<b>Quantity: </b><pre>" + tpOrder.origQty + "</pre>\n\n" +
-										"<u>SPOT BALANCES UPDATE</u>\n\n" +
+										"<u>SPOT BALANCES UPDATE</u>\n" +
 										"<b>ETH: </b><pre>" + balanceQuote + "</pre>\n" +
-										"<b>USDT: </b><pre>" + balanceBase + "</pre>\n\n" +
+										"<b>USDT: </b><pre>" + balanceBase + "</pre>\n" +
 										"<b>Total Value: </b><pre>" + totalValue + "</pre>",
 										{ parse_mode : 'HTML' }
 									)
@@ -285,7 +285,7 @@ app.post('/api/v1/' + quoteAsset + baseAsset, function (req, res) {
 											// Telegram reporting
 											tgbot.telegram.sendMessage(
 												chatId,
-												"<u>OPEN SHORT POSITION</u>\n\n" +
+												"<u>OPEN SHORT POSITION</u>\n" +
 												"<b>Market: </b><pre>" + b.symbol + "</pre>\n" +
 												"<b>Leverage: </b><pre>" + shortLeverage + "</pre>\n" +
 												"<b>Borrowed: </b><pre>" + borrowQuoteAmount + " " + quoteAsset + "</pre>\n" +
@@ -312,7 +312,7 @@ app.post('/api/v1/' + quoteAsset + baseAsset, function (req, res) {
 												"<u>TAKE PROFIT OPENED</u>\n" +
 												"<b>Order ID: </b><pre>" + shortTpOrderId + "</pre>\n" + 
 												"<b>TP Price: </b><pre>" + tpOrder.price + " USDT</pre>\n" +
-												"<b>Quantity: </b><pre>" + tpOrder.amount + "</pre>\n\n",
+												"<b>Quantity: </b><pre>" + tpOrder.amount + "</pre>\n",
 												{ parse_mode : 'HTML' }
 											)
 										})
@@ -364,8 +364,8 @@ setInterval(() => {
 						"<b>Trigger Time: </b><pre>" + a.datetime + "</pre>\n\n" +
 						"<u>SPOT BALANCES UPDATE</u>\n" +
 						"<b>ETH: </b><pre>" + balanceQuote + "</pre>\n" +
-						"<b>USDT: </b><pre>" + balanceBase + "</pre>\n\n" +
-						"<b>Total Value: </b><pre>" + totalValue + "</pre>\n\n" +
+						"<b>USDT: </b><pre>" + balanceBase + "</pre>\n" +
+						"<b>Total Value: </b><pre>" + totalValue + " USDT</pre>\n\n" +
 						"<b>P&L: </b>" + pnl + "%",
 						{ parse_mode : 'HTML' }
 					)
@@ -388,8 +388,8 @@ setInterval(() => {
 							"<b>Trigger Time: </b><pre>" + b.datetime + "</pre>\n\n" +
 							"<u>SPOT BALANCES UPDATE</u>\n" +
 							"<b>ETH: </b><pre>" + balanceQuote + "</pre>\n" +
-							"<b>USDT: </b><pre>" + balanceBase + "</pre>\n\n" +
-							"<b>Total Value: </b><pre>" + totalValue + "</pre>\n\n" +
+							"<b>USDT: </b><pre>" + balanceBase + "</pre>\n" +
+							"<b>Total Value: </b><pre>" + totalValue + " USDT</pre>\n\n" +
 							"<b>P&L: </b>" + pnl + "%",
 							{ parse_mode : 'HTML' }
 						)
@@ -427,8 +427,8 @@ setInterval(() => {
 								"<b>Trigger Time: </b><pre>" + b.datetime + "</pre>\n\n" +
 								"<u>MARGIN BALANCES UPDATE</u>\n" +
 								"<b>ETH: </b><pre>" + marginBalanceQuote + "</pre>\n" +
-								"<b>USDT: </b><pre>" + marginBalanceBase + "</pre>\n\n" +
-								"<b>Total Value: </b><pre>" + marginTotalValue + "</pre>\n\n" +
+								"<b>USDT: </b><pre>" + marginBalanceBase + "</pre>\n" +
+								"<b>Total Value: </b><pre>" + marginTotalValue + " USDT</pre>\n\n" +
 								"<b>P&L: </b>" + pnl + "%",
 								{ parse_mode : 'HTML' }
 							)
@@ -464,8 +464,8 @@ setInterval(() => {
 								"<b>Trigger Time: </b><pre>" + b.datetime + "</pre>\n\n" +
 								"<u>MARGIN BALANCES UPDATE</u>\n" +
 								"<b>ETH: </b><pre>" + marginBalanceQuote + "</pre>\n" +
-								"<b>USDT: </b><pre>" + marginBalanceBase + "</pre>\n\n" +
-								"<b>Total Value: </b><pre>" + marginTotalValue + "</pre>\n\n" +
+								"<b>USDT: </b><pre>" + marginBalanceBase + "</pre>\n" +
+								"<b>Total Value: </b><pre>" + marginTotalValue + " USDT</pre>\n\n" +
 								"<b>P&L: </b>" + pnl + "%",
 								{ parse_mode : 'HTML' }
 							)
