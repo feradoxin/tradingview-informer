@@ -46,8 +46,8 @@ https.createServer(
     );
 	// Initial balance update to global vars
 	binance.fetchBalance().then(balances => {
-		binance.fetchTicker (symbol).then(res => {
-			let quoteAssetPrice = res.last;
+		binance.fetchTicker(symbol).then(b => {
+			let quoteAssetPrice = b.last;
 			balanceQuote = balances.free[quoteAsset];
 			balanceBase = balances.free[baseAsset];
 			initialValue = balanceBase + (balanceQuote * quoteAssetPrice);
@@ -59,6 +59,37 @@ https.createServer(
 				"<b>Initial Value: </b>" + initialValue + " USD",
 				{ parse_mode : 'HTML' }
 			)
+		});
+	});
+
+	binance.fetchBalance({ 'marginMode' : marginMode }).then(marginBalance => {
+		binance.fetchBalance().then(spotBalance => {
+			binance.fetchTicker(symbol).then(a => {
+				let quoteAssetPrice = a.last;
+
+				// Spot balances
+				balanceQuote = spotBalance.free[quoteAsset];
+				balanceBase = spotBalance.free[baseAsset];
+				initialValue = balanceBase + (balanceQuote * quoteAssetPrice);
+
+				// Margin balances
+				marginBalanceQuote = marginBalance[symbol].free[quoteAsset];
+				marginBalanceBase = marginBalance[symbol].free[baseAsset];
+				marginInitialValue = marginBalanceBase + (marginBalanceQuote * quoteAssetPrice);
+
+				tgbot.telegram.sendMessage(
+					chatId,
+					"<u>INITIAL SPOT BALANCES</u>\n\n" +
+					"<b>ETH: </b><pre>" + balanceQuote + "</pre>\n" +
+					"<b>USDT: </b><pre>" + balanceBase + "</pre>\n" +
+					"<b>Initial Value: </b>" + initialValue + " USD\n\n" +
+					"<u>INITIAL MARGIN BALANCES</u>\n\n" +
+					"<b>ETH: </b><pre>" + marginBalanceQuote + "</pre>\n" +
+					"<b>USDT: </b><pre>" + marginBalanceBase + "</pre>\n" +
+					"<b>Initial Value: </b>" + marginInitialValue + " USD\n\n",
+					{ parse_mode : 'HTML' }
+				)
+			});
 		});
 	})
 });
