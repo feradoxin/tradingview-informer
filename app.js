@@ -200,7 +200,7 @@ app.post('/api/v1/' + quoteAsset + baseAsset, function (req, res) {
 										"<b>Order ID: </b><pre>" + longTpOrderId + "</pre>\n" + 
 										"<b>TP Price: </b><pre>" + tpOrder.price + " USDT</pre>\n" +
 										"<b>Quantity: </b><pre>" + tpOrder.origQty + "</pre>\n\n" +
-										"<u>BALANCES UPDATE</u>\n\n" +
+										"<u>SPOT BALANCES UPDATE</u>\n\n" +
 										"<b>ETH: </b><pre>" + balanceQuote + "</pre>\n" +
 										"<b>USDT: </b><pre>" + balanceBase + "</pre>\n\n" +
 										"<b>Total Value: </b><pre>" + totalValue + "</pre>",
@@ -362,7 +362,7 @@ setInterval(() => {
 						"<u>LONG POSITION: TAKE-PROFIT TRIGGERED</u>\n" +
 						"<b>TP Price: </b><pre>" + a.price + "</pre>\n" +
 						"<b>Trigger Time: </b><pre>" + a.datetime + "</pre>\n\n" +
-						"<u>BALANCES UPDATE</u>\n" +
+						"<u>SPOT BALANCES UPDATE</u>\n" +
 						"<b>ETH: </b><pre>" + balanceQuote + "</pre>\n" +
 						"<b>USDT: </b><pre>" + balanceBase + "</pre>\n\n" +
 						"<b>Total Value: </b><pre>" + totalValue + "</pre>\n\n" +
@@ -386,7 +386,7 @@ setInterval(() => {
 							"<u>LONG POSITION: STOP-LOSS TRIGGERED</u>\n" +
 							"<b>SL Price: </b><pre>" + b.price + "</pre>\n" +
 							"<b>Trigger Time: </b><pre>" + b.datetime + "</pre>\n\n" +
-							"<u>BALANCES UPDATE</u>\n" +
+							"<u>SPOT BALANCES UPDATE</u>\n" +
 							"<b>ETH: </b><pre>" + balanceQuote + "</pre>\n" +
 							"<b>USDT: </b><pre>" + balanceBase + "</pre>\n\n" +
 							"<b>Total Value: </b><pre>" + totalValue + "</pre>\n\n" +
@@ -425,7 +425,7 @@ setInterval(() => {
 								"<u>SHORT POSITION: TAKE-PROFIT TRIGGERED</u>\n" +
 								"<b>TP Price: </b><pre>" + b.price + "</pre>\n" +
 								"<b>Trigger Time: </b><pre>" + b.datetime + "</pre>\n\n" +
-								"<u>BALANCES UPDATE</u>\n" +
+								"<u>MARGIN BALANCES UPDATE</u>\n" +
 								"<b>ETH: </b><pre>" + marginBalanceQuote + "</pre>\n" +
 								"<b>USDT: </b><pre>" + marginBalanceBase + "</pre>\n\n" +
 								"<b>Total Value: </b><pre>" + marginTotalValue + "</pre>\n\n" +
@@ -462,7 +462,7 @@ setInterval(() => {
 								"<u>SHORT POSITION: STOP-LOSS TRIGGERED</u>\n" +
 								"<b>SL Price: </b><pre>" + b.price + "</pre>\n" +
 								"<b>Trigger Time: </b><pre>" + b.datetime + "</pre>\n\n" +
-								"<u>BALANCES UPDATE</u>\n" +
+								"<u>MARGIN BALANCES UPDATE</u>\n" +
 								"<b>ETH: </b><pre>" + marginBalanceQuote + "</pre>\n" +
 								"<b>USDT: </b><pre>" + marginBalanceBase + "</pre>\n\n" +
 								"<b>Total Value: </b><pre>" + marginTotalValue + "</pre>\n\n" +
