@@ -37,7 +37,7 @@ https.createServer(
     console.log("HTTPS Express server running on port 443...");
     tgbot.telegram.sendMessage(
         chatId,
-        "MP Auto-tader started.\n" +
+        "MP Auto-Trader started.\n" +
         "Awaiting signals from Tradingview.\n\n" +
         "<u><b>TRADING: MARKETS CONNECTED</b></u>\n" +
         "<pre>[1] BINANCE:ETHUSDT</pre>\n\n" +
