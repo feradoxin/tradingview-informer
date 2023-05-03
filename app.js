@@ -220,116 +220,116 @@ app.post('/api/v1/' + quoteAsset + baseAsset, function (req, res) {
 					{ parse_mode : 'HTML' }
 				)
 			}
+		}
 
-			// Short signal confirmed
-			if (signal1 === 'short' && signal2 === 'short' && shortPosition !== 'open') {
-				if (marginBalanceBase > 5) { // Check sufficient base balance
-					(async () => {
-						marginBalanceBase = await binance.fetchBalance({ 'marginMode' : marginMode}).then(res => {
-							return res[symbol].free[baseAsset];
-						});
-						let quoteAssetPrice = await binance.fetchTicker(symbol).then(res => {
-							return res.last;
-						});
-					
-						// Borrow quote asset on margin market
-						let borrowQuoteAmount = await binance.amountToPrecision(symbol, (marginBalanceBase * shortLeverage * 0.975) / quoteAssetPrice);
-						binance.borrowMargin(quoteAsset, borrowQuoteAmount, symbol, { 'marginMode' : marginMode }).then(a => {
-							// Short sell quote asset
-							binance.createMarketSellOrder(symbol, borrowQuoteAmount, { 'marginMode' : marginMode }).then(b => {
-								binance.fetchBalance({ 'marginMode' : marginMode }).then(c => {
-									// Fetch margin balances after short position open
-									marginBalanceQuote = c[symbol].free[quoteAsset]
-									marginBalanceBase = c[symbol].free[baseAsset]
-									marginTotalValue = (marginBalanceQuote * quoteAssetPrice) + marginBalanceBase
-					
-									// Calc range highs and risk value
-									let fromTimestamp = binance.milliseconds() - 1800 * 1000;
-									binance.fetchOHLCV(symbol, '5m', fromTimestamp, 6).then(d => {
-										let candleHighs = [d[0][2],d[1][2],d[2][2],d[3][2],d[4][2],d[5][2]]
-										let rangeHigh = candleHighs.sort()[5];
-										let risk = rangeHigh - quoteAssetPrice
-										let stopLossPrice = quoteAssetPrice + (risk * riskFactor)
-										let takeProfitPrice = quoteAssetPrice - (risk * takeProfitFactor)
-					
-										// Open stop-loss limit order
+		// Short signal confirmed
+		if (signal1 === 'short' && signal2 === 'short' && shortPosition !== 'open') {
+			if (marginBalanceBase > 5) { // Check sufficient base balance
+				(async () => {
+					marginBalanceBase = await binance.fetchBalance({ 'marginMode' : marginMode}).then(res => {
+						return res[symbol].free[baseAsset];
+					});
+					let quoteAssetPrice = await binance.fetchTicker(symbol).then(res => {
+						return res.last;
+					});
+				
+					// Borrow quote asset on margin market
+					let borrowQuoteAmount = await binance.amountToPrecision(symbol, (marginBalanceBase * shortLeverage * 0.975) / quoteAssetPrice);
+					binance.borrowMargin(quoteAsset, borrowQuoteAmount, symbol, { 'marginMode' : marginMode }).then(a => {
+						// Short sell quote asset
+						binance.createMarketSellOrder(symbol, borrowQuoteAmount, { 'marginMode' : marginMode }).then(b => {
+							binance.fetchBalance({ 'marginMode' : marginMode }).then(c => {
+								// Fetch margin balances after short position open
+								marginBalanceQuote = c[symbol].free[quoteAsset]
+								marginBalanceBase = c[symbol].free[baseAsset]
+								marginTotalValue = (marginBalanceQuote * quoteAssetPrice) + marginBalanceBase
+				
+								// Calc range highs and risk value
+								let fromTimestamp = binance.milliseconds() - 1800 * 1000;
+								binance.fetchOHLCV(symbol, '5m', fromTimestamp, 6).then(d => {
+									let candleHighs = [d[0][2],d[1][2],d[2][2],d[3][2],d[4][2],d[5][2]]
+									let rangeHigh = candleHighs.sort()[5];
+									let risk = rangeHigh - quoteAssetPrice
+									let stopLossPrice = quoteAssetPrice + (risk * riskFactor)
+									let takeProfitPrice = quoteAssetPrice - (risk * takeProfitFactor)
+				
+									// Open stop-loss limit order
+									binance.createOrder(
+										quoteAsset + baseAsset,
+										'STOP_LOSS_LIMIT',
+										'buy',
+										binance.amountToPrecision(symbol, borrowQuoteAmount * 1.001),
+										binance.priceToPrecision(symbol, stopLossPrice * 1.0002),
+										{
+											'stopPrice': binance.priceToPrecision(symbol, stopLossPrice),
+											'marginMode': marginMode
+										}
+									).then(slOrder => {
+										// Open take-profit limit order
 										binance.createOrder(
 											quoteAsset + baseAsset,
-											'STOP_LOSS_LIMIT',
+											'TAKE_PROFIT_LIMIT',
 											'buy',
 											binance.amountToPrecision(symbol, borrowQuoteAmount * 1.001),
-											binance.priceToPrecision(symbol, stopLossPrice * 1.0002),
+											binance.priceToPrecision(symbol, takeProfitPrice * 1.0002),
 											{
-												'stopPrice': binance.priceToPrecision(symbol, stopLossPrice),
+												'stopPrice': binance.priceToPrecision(symbol, takeProfitPrice),
 												'marginMode': marginMode
 											}
-										).then(slOrder => {
-											// Open take-profit limit order
-											binance.createOrder(
-												quoteAsset + baseAsset,
-												'TAKE_PROFIT_LIMIT',
-												'buy',
-												binance.amountToPrecision(symbol, borrowQuoteAmount * 1.001),
-												binance.priceToPrecision(symbol, takeProfitPrice * 1.0002),
-												{
-													'stopPrice': binance.priceToPrecision(symbol, takeProfitPrice),
-													'marginMode': marginMode
-												}
-											).then(tpOrder => {
-												// Store SL/TP order IDs and mark position open
-												shortSlOrderId = slOrder.id
-												shortTpOrderId = tpOrder.id
-												shortPosition = 'open'
-			
-												// Telegram reporting
-												tgbot.telegram.sendMessage(
-													chatId,
-													"<u>OPEN SHORT POSITION</u>\n\n" +
-													"<b>Market: </b><pre>" + b.symbol + "</pre>\n" +
-													"<b>Leverage: </b><pre>" + shortLeverage + "</pre>\n" +
-													"<b>Borrowed: </b><pre>" + borrowQuoteAmount + " " + quoteAsset + "</pre>\n" +
-													"<b>Executed: </b><pre>" + b.filled + " " + quoteAsset + "</pre>\n" +
-													"<b>TradeID: </b><pre>" + b.clientOrderId + "</pre>\n" +
-													"<b>Execution Timestamp: </b><pre>" + b.datetime + "</pre>\n" +
-													"<b>Status: </b><pre>" + b.info.status + "</pre>\n" +
-													"<b>Price: </b><pre>" + b.price + " " + baseAsset + "</pre>\n" +
-													"<b>Cost: </b><pre>" + b.cost + "</pre>\n\n" +
-													"Chart: https://www.tradingview.com/chart/w9Jx4CUu/",
-													{ parse_mode : 'HTML' , disable_web_page_preview : true }
-												)
-			
-												tgbot.telegram.sendMessage(
-													chatId,
-													"<u>SL/TP PARAMS</u>\n" +
-													"<b>Risk: </b><pre>" + risk + "</pre>\n" + 
-													"<b>SL Factor: </b><pre>" + riskFactor + "</pre>\n" +
-													"<b>TP Factor: </b><pre>" + takeProfitFactor + "</pre>\n\n" +
-													"<u>STOP LOSS OPENED</u>\n" +
-													"<b>Order ID: </b><pre>" + shortSlOrderId + "</pre>\n" + 
-													"<b>SL Price: </b><pre>" + slOrder.price + " USDT</pre>\n" +
-													"<b>Quantity: </b><pre>" + slOrder.amount + "</pre>\n\n" + 
-													"<u>TAKE PROFIT OPENED</u>\n" +
-													"<b>Order ID: </b><pre>" + shortTpOrderId + "</pre>\n" + 
-													"<b>TP Price: </b><pre>" + tpOrder.price + " USDT</pre>\n" +
-													"<b>Quantity: </b><pre>" + tpOrder.amount + "</pre>\n\n",
-													{ parse_mode : 'HTML' }
-												)
-											})
+										).then(tpOrder => {
+											// Store SL/TP order IDs and mark position open
+											shortSlOrderId = slOrder.id
+											shortTpOrderId = tpOrder.id
+											shortPosition = 'open'
+		
+											// Telegram reporting
+											tgbot.telegram.sendMessage(
+												chatId,
+												"<u>OPEN SHORT POSITION</u>\n\n" +
+												"<b>Market: </b><pre>" + b.symbol + "</pre>\n" +
+												"<b>Leverage: </b><pre>" + shortLeverage + "</pre>\n" +
+												"<b>Borrowed: </b><pre>" + borrowQuoteAmount + " " + quoteAsset + "</pre>\n" +
+												"<b>Executed: </b><pre>" + b.filled + " " + quoteAsset + "</pre>\n" +
+												"<b>TradeID: </b><pre>" + b.clientOrderId + "</pre>\n" +
+												"<b>Execution Timestamp: </b><pre>" + b.datetime + "</pre>\n" +
+												"<b>Status: </b><pre>" + b.info.status + "</pre>\n" +
+												"<b>Price: </b><pre>" + b.price + " " + baseAsset + "</pre>\n" +
+												"<b>Cost: </b><pre>" + b.cost + "</pre>\n\n" +
+												"Chart: https://www.tradingview.com/chart/w9Jx4CUu/",
+												{ parse_mode : 'HTML' , disable_web_page_preview : true }
+											)
+		
+											tgbot.telegram.sendMessage(
+												chatId,
+												"<u>SL/TP PARAMS</u>\n" +
+												"<b>Risk: </b><pre>" + risk + "</pre>\n" + 
+												"<b>SL Factor: </b><pre>" + riskFactor + "</pre>\n" +
+												"<b>TP Factor: </b><pre>" + takeProfitFactor + "</pre>\n\n" +
+												"<u>STOP LOSS OPENED</u>\n" +
+												"<b>Order ID: </b><pre>" + shortSlOrderId + "</pre>\n" + 
+												"<b>SL Price: </b><pre>" + slOrder.price + " USDT</pre>\n" +
+												"<b>Quantity: </b><pre>" + slOrder.amount + "</pre>\n\n" + 
+												"<u>TAKE PROFIT OPENED</u>\n" +
+												"<b>Order ID: </b><pre>" + shortTpOrderId + "</pre>\n" + 
+												"<b>TP Price: </b><pre>" + tpOrder.price + " USDT</pre>\n" +
+												"<b>Quantity: </b><pre>" + tpOrder.amount + "</pre>\n\n",
+												{ parse_mode : 'HTML' }
+											)
 										})
 									})
 								})
 							})
-						});
-					}) ();
-				} else {
-					// Margin account base asset low, likely short position open. Block further shorts and await strategy completion.
-					tgbot.telegram.sendMessage(
-						chatId,
-						"<u>TRADE FAILED</u>\n\n" +
-						"Short position active. Current margin balance is " + marginBalanceBase + " USDT. Awaiting close signal.\n\n",
-						{ parse_mode : 'HTML' }
-					)
-				}
+						})
+					});
+				}) ();
+			} else {
+				// Margin account base asset low, likely short position open. Block further shorts and await strategy completion.
+				tgbot.telegram.sendMessage(
+					chatId,
+					"<u>TRADE FAILED</u>\n\n" +
+					"Short position active. Current margin balance is " + marginBalanceBase + " USDT. Awaiting close signal.\n\n",
+					{ parse_mode : 'HTML' }
+				)
 			}
 		}
 	}
