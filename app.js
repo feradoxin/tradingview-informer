@@ -406,7 +406,7 @@ setInterval(() => {
 			if (b.status === 'closed') {
 				// TP Triggered -> fetch borrowed amount and interest then repay
 				binance.fetchBorrowInterest(quoteAsset, symbol, undefined, 1, { 'marginMode' : marginMode }).then(c => {
-					let repayAmount = c[0].info.principal + res[0].info.interest
+					let repayAmount = c[0].info.principal + c[0].info.interest
 					binance.repayMargin(quoteAsset, repayAmount, symbol, { 'marginMode': marginMode }).then(d => {
 						// Set short-position to closed
 						shortPosition = 'closed'
@@ -443,7 +443,7 @@ setInterval(() => {
 			if (b.status === 'closed') {
 				// SL Triggered -> fetch borrowed amount and interest then repay
 				binance.fetchBorrowInterest(quoteAsset, symbol, undefined, 1, { 'marginMode' : marginMode }).then(c => {
-					let repayAmount = c[0].info.principal + res[0].info.interest
+					let repayAmount = c[0].info.principal + c[0].info.interest
 					binance.repayMargin(quoteAsset, repayAmount, symbol, { 'marginMode': marginMode }).then(d => {
 						// Set short-position to closed
 						shortPosition = 'closed'
