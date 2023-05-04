@@ -285,7 +285,7 @@ app.post('/api/v1/' + quoteAsset + baseAsset, function (req, res) {
 											// Telegram reporting
 											tgbot.telegram.sendMessage(
 												chatId,
-												"<u>OPEN SHORT POSITION</u>\n" +
+												"<u>OPEN SHORT POSITION</u>\n\n" +
 												"<b>Market: </b><pre>" + b.symbol + "</pre>\n" +
 												"<b>Leverage: </b><pre>" + shortLeverage + "</pre>\n" +
 												"<b>Borrowed: </b><pre>" + borrowQuoteAmount + " " + quoteAsset + "</pre>\n" +
