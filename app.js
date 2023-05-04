@@ -416,8 +416,8 @@ setInterval(() => {
 	
 						// Fetch margin balances, calc PNL, and report to Telegram
 						binance.fetchBalance({ 'marginMode' : marginMode }).then(e => {
-							marginBalanceBase = c[symbol].free[baseAsset]
-							marginBalanceQuote = c[symbol].free[quoteAsset]
+							marginBalanceBase = e[symbol].free[baseAsset]
+							marginBalanceQuote = e[symbol].free[quoteAsset]
 							marginTotalValue = (marginBalanceQuote * b.price) + marginBalanceBase
 							let pnl = parseFloat((marginTotalValue - marginInitialValue) / marginInitialValue * 100).toFixed(2)
 							tgbot.telegram.sendMessage(
@@ -453,8 +453,8 @@ setInterval(() => {
 	
 						// Fetch margin balances, calc PNL, and report to Telegram
 						binance.fetchBalance({ 'marginMode' : marginMode }).then(e => {
-							marginBalanceBase = c[symbol].free[baseAsset]
-							marginBalanceQuote = c[symbol].free[quoteAsset]
+							marginBalanceBase = e[symbol].free[baseAsset]
+							marginBalanceQuote = e[symbol].free[quoteAsset]
 							marginTotalValue = (marginBalanceQuote * b.price) + marginBalanceBase
 							let pnl = parseFloat((marginTotalValue - marginInitialValue) / marginInitialValue * 100).toFixed(2)
 							tgbot.telegram.sendMessage(
