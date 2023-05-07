@@ -15,7 +15,7 @@ const shortLeverage = 1; 		// Leverage on short orders
 const quoteAsset = 'ETH';		// Asset to buy/sell, e.g. ETH, BTC, BAT
 const baseAsset = 'USDT';		// Currency asset used to buy/sell, e.g. USDT, USDC, BTC
 const riskFactor = 1;			// Risk:Reward risk value
-const takeProfitFactor = 2;		// Risk:Reward reward value
+const takeProfitFactor = 1.8;		// Risk:Reward reward value
 const marginMode = 'isolated';	// Margin market type: 'isolated' or 'cross'
 const tick = 10;				// Update interval in seconds, default 10s to reduce API rate
 
