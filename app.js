@@ -40,7 +40,7 @@ https.createServer(
         "MP Auto-Trader started.\n" +
         "Awaiting signals from Tradingview.\n\n" +
         "<u><b>TRADING: MARKETS CONNECTED</b></u>\n" +
-        "<pre>[1] BINANCE:ETHUSDT</pre>\n\n" +
+        "<pre>[1] BINANCE:" + quoteAsset + baseAsset + "</pre>\n\n" +
 		"Chart: https://www.tradingview.com/chart/w9Jx4CUu/",
         { parse_mode : 'HTML' , disable_web_page_preview : true }
     );
@@ -63,11 +63,11 @@ https.createServer(
 				tgbot.telegram.sendMessage(
 					chatId,
 					"<u>INITIAL SPOT BALANCES</u>\n" +
-					"<b>ETH: </b><pre>" + balanceQuote + "</pre>\n" +
+					"<b>" + quoteAsset + ": </b><pre>" + balanceQuote + "</pre>\n" +
 					"<b>USDT: </b><pre>" + balanceBase + "</pre>\n" +
 					"<b>Initial Value: </b><pre>" + initialValue + " USDT</pre>\n\n" +
 					"<u>INITIAL MARGIN BALANCES</u>\n" +
-					"<b>ETH: </b><pre>" + marginBalanceQuote + "</pre>\n" +
+					"<b>" + quoteAsset + ": </b><pre>" + marginBalanceQuote + "</pre>\n" +
 					"<b>USDT: </b><pre>" + marginBalanceBase + "</pre>\n" +
 					"<b>Initial Value: </b><pre>" + marginInitialValue + " USDT</pre>\n\n",
 					{ parse_mode : 'HTML' }
@@ -154,7 +154,7 @@ app.post('/api/v1/' + quoteAsset + baseAsset, function (req, res) {
 							"<b>Execution Timestamp: </b><pre>" + res.datetime + "</pre>\n" +
 							"<b>Status: </b><pre>" + res.info.status + "</pre>\n" +
 							"<b>Price: </b><pre>" + res.price + " USDT</pre>\n" +
-							"<b>Quantity: </b><pre>" + res.filled + " ETH</pre>\n\n" +
+							"<b>Quantity: </b><pre>" + res.filled + " " + quoteAsset + "</pre>\n\n" +
 							"Chart: https://www.tradingview.com/chart/w9Jx4CUu/",
 							{ parse_mode : 'HTML' , disable_web_page_preview : true }
 						)
@@ -201,7 +201,7 @@ app.post('/api/v1/' + quoteAsset + baseAsset, function (req, res) {
 										"<b>TP Price: </b><pre>" + tpOrder.price + " USDT</pre>\n" +
 										"<b>Quantity: </b><pre>" + tpOrder.origQty + "</pre>\n\n" +
 										"<u>SPOT BALANCES UPDATE</u>\n" +
-										"<b>ETH: </b><pre>" + balanceQuote + "</pre>\n" +
+										"<b>" + quoteAsset + ": </b><pre>" + balanceQuote + "</pre>\n" +
 										"<b>USDT: </b><pre>" + balanceBase + "</pre>\n" +
 										"<b>Total Value: </b><pre>" + totalValue + "</pre>",
 										{ parse_mode : 'HTML' }
@@ -365,7 +365,7 @@ setInterval(() => {
 						"<b>TP Price: </b><pre>" + a.price + "</pre>\n" +
 						"<b>Trigger Time: </b><pre>" + a.datetime + "</pre>\n\n" +
 						"<u>SPOT BALANCES UPDATE</u>\n" +
-						"<b>ETH: </b><pre>" + balanceQuote + "</pre>\n" +
+						"<b>" + quoteAsset + ": </b><pre>" + balanceQuote + "</pre>\n" +
 						"<b>USDT: </b><pre>" + balanceBase + "</pre>\n" +
 						"<b>Total Value: </b><pre>" + totalValue + " USDT</pre>\n\n" +
 						"<b>P&L: </b>" + pnl + "%",
@@ -389,7 +389,7 @@ setInterval(() => {
 							"<b>SL Price: </b><pre>" + b.price + "</pre>\n" +
 							"<b>Trigger Time: </b><pre>" + b.datetime + "</pre>\n\n" +
 							"<u>SPOT BALANCES UPDATE</u>\n" +
-							"<b>ETH: </b><pre>" + balanceQuote + "</pre>\n" +
+							"<b>" + quoteAsset + ": </b><pre>" + balanceQuote + "</pre>\n" +
 							"<b>USDT: </b><pre>" + balanceBase + "</pre>\n" +
 							"<b>Total Value: </b><pre>" + totalValue + " USDT</pre>\n\n" +
 							"<b>P&L: </b>" + pnl + "%",
@@ -427,7 +427,7 @@ setInterval(() => {
 									"<b>TP Price: </b><pre>" + b.price + "</pre>\n" +
 									"<b>Trigger Time: </b><pre>" + b.datetime + "</pre>\n\n" +
 									"<u>MARGIN BALANCES UPDATE</u>\n" +
-									"<b>ETH: </b><pre>" + marginBalanceQuote + "</pre>\n" +
+									"<b>" + quoteAsset + ": </b><pre>" + marginBalanceQuote + "</pre>\n" +
 									"<b>USDT: </b><pre>" + marginBalanceBase + "</pre>\n" +
 									"<b>Total Value: </b><pre>" + marginTotalValue + " USDT</pre>\n\n" +
 									"<b>P&L: </b>" + pnl + "%",
@@ -464,7 +464,7 @@ setInterval(() => {
 									"<b>SL Price: </b><pre>" + b.price + "</pre>\n" +
 									"<b>Trigger Time: </b><pre>" + b.datetime + "</pre>\n\n" +
 									"<u>MARGIN BALANCES UPDATE</u>\n" +
-									"<b>ETH: </b><pre>" + marginBalanceQuote + "</pre>\n" +
+									"<b>" + quoteAsset + ": </b><pre>" + marginBalanceQuote + "</pre>\n" +
 									"<b>USDT: </b><pre>" + marginBalanceBase + "</pre>\n" +
 									"<b>Total Value: </b><pre>" + marginTotalValue + " USDT</pre>\n\n" +
 									"<b>P&L: </b>" + pnl + "%",
