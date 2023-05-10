@@ -15,7 +15,7 @@ const shortLeverage = 1; 		// Leverage on short orders
 const quoteAsset = 'ETH';		// Asset to buy/sell, e.g. ETH, BTC, BAT
 const baseAsset = 'USDT';		// Currency asset used to buy/sell, e.g. USDT, USDC, BTC
 const riskFactor = 1;			// Risk:Reward risk value
-const takeProfitFactor = 2;		// Risk:Reward reward value
+const takeProfitFactor = 1.8;		// Risk:Reward reward value
 const marginMode = 'isolated';	// Margin market type: 'isolated' or 'cross'
 const tick = 10;				// Update interval in seconds, default 10s to reduce API rate
 
@@ -299,22 +299,24 @@ app.post('/api/v1/' + quoteAsset + baseAsset, function (req, res) {
 												{ parse_mode : 'HTML' , disable_web_page_preview : true }
 											)
 		
-											tgbot.telegram.sendMessage(
-												chatId,
-												"<u>SL/TP PARAMS</u>\n" +
-												"<b>Risk: </b><pre>" + risk + "</pre>\n" + 
-												"<b>SL Factor: </b><pre>" + riskFactor + "</pre>\n" +
-												"<b>TP Factor: </b><pre>" + takeProfitFactor + "</pre>\n\n" +
-												"<u>STOP LOSS OPENED</u>\n" +
-												"<b>Order ID: </b><pre>" + shortSlOrderId + "</pre>\n" + 
-												"<b>SL Price: </b><pre>" + slOrder.price + " USDT</pre>\n" +
-												"<b>Quantity: </b><pre>" + slOrder.amount + "</pre>\n\n" + 
-												"<u>TAKE PROFIT OPENED</u>\n" +
-												"<b>Order ID: </b><pre>" + shortTpOrderId + "</pre>\n" + 
-												"<b>TP Price: </b><pre>" + tpOrder.price + " USDT</pre>\n" +
-												"<b>Quantity: </b><pre>" + tpOrder.amount + "</pre>\n",
-												{ parse_mode : 'HTML' }
-											)
+											setTimeout(() => {
+												tgbot.telegram.sendMessage(
+													chatId,
+													"<u>SL/TP PARAMS</u>\n" +
+													"<b>Risk: </b><pre>" + risk + "</pre>\n" + 
+													"<b>SL Factor: </b><pre>" + riskFactor + "</pre>\n" +
+													"<b>TP Factor: </b><pre>" + takeProfitFactor + "</pre>\n\n" +
+													"<u>STOP LOSS OPENED</u>\n" +
+													"<b>Order ID: </b><pre>" + shortSlOrderId + "</pre>\n" + 
+													"<b>SL Price: </b><pre>" + slOrder.price + " USDT</pre>\n" +
+													"<b>Quantity: </b><pre>" + slOrder.amount + "</pre>\n\n" + 
+													"<u>TAKE PROFIT OPENED</u>\n" +
+													"<b>Order ID: </b><pre>" + shortTpOrderId + "</pre>\n" + 
+													"<b>TP Price: </b><pre>" + tpOrder.price + " USDT</pre>\n" +
+													"<b>Quantity: </b><pre>" + tpOrder.amount + "</pre>\n",
+													{ parse_mode : 'HTML' }
+												)
+											}, 250)
 										})
 									})
 								})
@@ -412,26 +414,26 @@ setInterval(() => {
 						shortPosition = 'closed'
 	
 						// Cancel stop-loss limit order
-						binance.cancelOrder(shortSlOrderId, symbol, { 'marginMode' : marginMode })
-	
-						// Fetch margin balances, calc PNL, and report to Telegram
-						binance.fetchBalance({ 'marginMode' : marginMode }).then(e => {
-							marginBalanceBase = e[symbol].free[baseAsset]
-							marginBalanceQuote = e[symbol].free[quoteAsset]
-							marginTotalValue = (marginBalanceQuote * b.price) + marginBalanceBase
-							let pnl = parseFloat((marginTotalValue - marginInitialValue) / marginInitialValue * 100).toFixed(2)
-							tgbot.telegram.sendMessage(
-								chatId,
-								"<u>SHORT POSITION: TAKE-PROFIT TRIGGERED</u>\n" +
-								"<b>TP Price: </b><pre>" + b.price + "</pre>\n" +
-								"<b>Trigger Time: </b><pre>" + b.datetime + "</pre>\n\n" +
-								"<u>MARGIN BALANCES UPDATE</u>\n" +
-								"<b>ETH: </b><pre>" + marginBalanceQuote + "</pre>\n" +
-								"<b>USDT: </b><pre>" + marginBalanceBase + "</pre>\n" +
-								"<b>Total Value: </b><pre>" + marginTotalValue + " USDT</pre>\n\n" +
-								"<b>P&L: </b>" + pnl + "%",
-								{ parse_mode : 'HTML' }
-							)
+						binance.cancelOrder(shortSlOrderId, symbol, { 'marginMode' : marginMode }).then(x => {
+							// Fetch margin balances, calc PNL, and report to Telegram
+							binance.fetchBalance({ 'marginMode' : marginMode }).then(e => {
+								marginBalanceBase = e[symbol].free[baseAsset]
+								marginBalanceQuote = e[symbol].free[quoteAsset]
+								marginTotalValue = (marginBalanceQuote * b.price) + marginBalanceBase
+								let pnl = parseFloat((marginTotalValue - marginInitialValue) / marginInitialValue * 100).toFixed(2)
+								tgbot.telegram.sendMessage(
+									chatId,
+									"<u>SHORT POSITION: TAKE-PROFIT TRIGGERED</u>\n" +
+									"<b>TP Price: </b><pre>" + b.price + "</pre>\n" +
+									"<b>Trigger Time: </b><pre>" + b.datetime + "</pre>\n\n" +
+									"<u>MARGIN BALANCES UPDATE</u>\n" +
+									"<b>ETH: </b><pre>" + marginBalanceQuote + "</pre>\n" +
+									"<b>USDT: </b><pre>" + marginBalanceBase + "</pre>\n" +
+									"<b>Total Value: </b><pre>" + marginTotalValue + " USDT</pre>\n\n" +
+									"<b>P&L: </b>" + pnl + "%",
+									{ parse_mode : 'HTML' }
+								)
+							})
 						})
 					})
 				})
@@ -449,26 +451,26 @@ setInterval(() => {
 						shortPosition = 'closed'
 	
 						// Cancel take-profit limit order
-						binance.cancelOrder(shortTpOrderId, symbol, { 'marginMode' : marginMode })
-	
-						// Fetch margin balances, calc PNL, and report to Telegram
-						binance.fetchBalance({ 'marginMode' : marginMode }).then(e => {
-							marginBalanceBase = e[symbol].free[baseAsset]
-							marginBalanceQuote = e[symbol].free[quoteAsset]
-							marginTotalValue = (marginBalanceQuote * b.price) + marginBalanceBase
-							let pnl = parseFloat((marginTotalValue - marginInitialValue) / marginInitialValue * 100).toFixed(2)
-							tgbot.telegram.sendMessage(
-								chatId,
-								"<u>SHORT POSITION: STOP-LOSS TRIGGERED</u>\n" +
-								"<b>SL Price: </b><pre>" + b.price + "</pre>\n" +
-								"<b>Trigger Time: </b><pre>" + b.datetime + "</pre>\n\n" +
-								"<u>MARGIN BALANCES UPDATE</u>\n" +
-								"<b>ETH: </b><pre>" + marginBalanceQuote + "</pre>\n" +
-								"<b>USDT: </b><pre>" + marginBalanceBase + "</pre>\n" +
-								"<b>Total Value: </b><pre>" + marginTotalValue + " USDT</pre>\n\n" +
-								"<b>P&L: </b>" + pnl + "%",
-								{ parse_mode : 'HTML' }
-							)
+						binance.cancelOrder(shortTpOrderId, symbol, { 'marginMode' : marginMode }).then(x => {
+							// Fetch margin balances, calc PNL, and report to Telegram
+							binance.fetchBalance({ 'marginMode' : marginMode }).then(e => {
+								marginBalanceBase = e[symbol].free[baseAsset]
+								marginBalanceQuote = e[symbol].free[quoteAsset]
+								marginTotalValue = (marginBalanceQuote * b.price) + marginBalanceBase
+								let pnl = parseFloat((marginTotalValue - marginInitialValue) / marginInitialValue * 100).toFixed(2)
+								tgbot.telegram.sendMessage(
+									chatId,
+									"<u>SHORT POSITION: STOP-LOSS TRIGGERED</u>\n" +
+									"<b>SL Price: </b><pre>" + b.price + "</pre>\n" +
+									"<b>Trigger Time: </b><pre>" + b.datetime + "</pre>\n\n" +
+									"<u>MARGIN BALANCES UPDATE</u>\n" +
+									"<b>ETH: </b><pre>" + marginBalanceQuote + "</pre>\n" +
+									"<b>USDT: </b><pre>" + marginBalanceBase + "</pre>\n" +
+									"<b>Total Value: </b><pre>" + marginTotalValue + " USDT</pre>\n\n" +
+									"<b>P&L: </b>" + pnl + "%",
+									{ parse_mode : 'HTML' }
+								)
+							})
 						})
 					})
 				})
