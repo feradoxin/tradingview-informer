@@ -234,7 +234,7 @@ app.post('/api/v1/' + quoteAsset + baseAsset, function (req, res) {
 					});
 				
 					// Borrow quote asset on margin market
-					let borrowQuoteAmount = await binance.amountToPrecision(symbol, (marginBalanceBase * shortLeverage * 0.85) / quoteAssetPrice);
+					let borrowQuoteAmount = await binance.amountToPrecision(symbol, (marginBalanceBase * shortLeverage * 0.925) / quoteAssetPrice);
 					binance.borrowMargin(quoteAsset, borrowQuoteAmount, symbol, { 'marginMode' : marginMode }).then(a => {
 						// Short sell quote asset
 						binance.createMarketSellOrder(symbol, borrowQuoteAmount, { 'marginMode' : marginMode }).then(b => {
