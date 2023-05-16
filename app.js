@@ -14,10 +14,11 @@ const longLeverage = 1;			// Leverage on long orders
 const shortLeverage = 1; 		// Leverage on short orders
 const quoteAsset = 'BTC';		// Asset to buy/sell, e.g. ETH, BTC, BAT
 const baseAsset = 'USDT';		// Currency asset used to buy/sell, e.g. USDT, USDC, BTC
-const riskFactor = 1;			// Risk:Reward risk value
-const takeProfitFactor = 2;		// Risk:Reward reward value
+const riskFactor = 1;			// Risk factor to stop-loss
+const takeProfitFactor = 1;		// Risk factor to take-profit
 const marginMode = 'isolated';	// Margin market type: 'isolated' or 'cross'
 const tick = 10;				// Update interval in seconds, default 10s to reduce API rate
+const timeframe = '1h';			// Candle timeframe interval, e.g. 5m, 15m, 1h, 4h
 
 
 // // Telegram bot (@frdx_tv_sig_bot)
@@ -165,8 +166,8 @@ app.post('/api/v1/' + quoteAsset + baseAsset, function (req, res) {
 							
 							// Calc trade risk and create SL/TP orders
 							let fromTimestamp = binance.milliseconds() - 1800 * 1000;
-							binance.fetchOHLCV(symbol, '5m', fromTimestamp, 6).then(a => {
-								let candleLows = [a[0][3],a[1][3],a[2][3],a[3][3],a[4][3],a[5][3]]
+							binance.fetchOHLCV(symbol, timeframe, fromTimestamp, 4).then(a => {
+								let candleLows = [a[0][3],a[1][3],a[2][3],a[3][3]]
 								let rangeLow = candleLows.sort()[0];
 								let risk = quoteAssetPrice - rangeLow
 								let stopLossPrice = quoteAssetPrice - (risk * riskFactor)
@@ -246,9 +247,9 @@ app.post('/api/v1/' + quoteAsset + baseAsset, function (req, res) {
 				
 								// Calc range highs and risk value
 								let fromTimestamp = binance.milliseconds() - 1800 * 1000;
-								binance.fetchOHLCV(symbol, '5m', fromTimestamp, 6).then(d => {
-									let candleHighs = [d[0][2],d[1][2],d[2][2],d[3][2],d[4][2],d[5][2]]
-									let rangeHigh = candleHighs.sort()[5];
+								binance.fetchOHLCV(symbol, timeframe, fromTimestamp, 4).then(d => {
+									let candleHighs = [d[0][2],d[1][2],d[2][2],d[3][2]]
+									let rangeHigh = candleHighs.sort()[3];
 									let risk = rangeHigh - quoteAssetPrice
 									let stopLossPrice = quoteAssetPrice + (risk * riskFactor)
 									let takeProfitPrice = quoteAssetPrice - (risk * takeProfitFactor)
