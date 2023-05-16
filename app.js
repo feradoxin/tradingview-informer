@@ -175,10 +175,10 @@ app.post('/api/v1/' + quoteAsset + baseAsset, function (req, res) {
 								let params = {
 									'symbol': quoteAsset + baseAsset,
 									'side': 'SELL',
-									'quantity': binance.amountToPrecision(symbol, quoteAmount),
+									'quantity': binance.amountToPrecision(symbol, balances.free[quoteAsset]),
 									'price': binance.priceToPrecision(symbol, takeProfitPrice),
 									'stopPrice': binance.priceToPrecision(symbol, stopLossPrice),
-									'stopLimitPrice': binance.priceToPrecision(symbol, stopLossPrice * 0.9998),
+									'stopLimitPrice': binance.priceToPrecision(symbol, stopLossPrice * 0.999998),
 									'stopLimitTimeInForce': 'GTC'
 								}
 								binance.privatePostOrderOco(params).then(b => {
@@ -235,7 +235,7 @@ app.post('/api/v1/' + quoteAsset + baseAsset, function (req, res) {
 					});
 				
 					// Borrow quote asset on margin market
-					let borrowQuoteAmount = await binance.amountToPrecision(symbol, (marginBalanceBase * shortLeverage * 0.85) / quoteAssetPrice);
+					let borrowQuoteAmount = await binance.amountToPrecision(symbol, (marginBalanceBase * shortLeverage * 0.925) / quoteAssetPrice);
 					binance.borrowMargin(quoteAsset, borrowQuoteAmount, symbol, { 'marginMode' : marginMode }).then(a => {
 						// Short sell quote asset
 						binance.createMarketSellOrder(symbol, borrowQuoteAmount, { 'marginMode' : marginMode }).then(b => {
@@ -259,7 +259,7 @@ app.post('/api/v1/' + quoteAsset + baseAsset, function (req, res) {
 										quoteAsset + baseAsset,
 										'STOP_LOSS_LIMIT',
 										'buy',
-										binance.amountToPrecision(symbol, borrowQuoteAmount * 1.001),
+										binance.amountToPrecision(symbol, borrowQuoteAmount * 1.0001),
 										binance.priceToPrecision(symbol, stopLossPrice * 1.0002),
 										{
 											'stopPrice': binance.priceToPrecision(symbol, stopLossPrice),
@@ -271,7 +271,7 @@ app.post('/api/v1/' + quoteAsset + baseAsset, function (req, res) {
 											quoteAsset + baseAsset,
 											'TAKE_PROFIT_LIMIT',
 											'buy',
-											binance.amountToPrecision(symbol, borrowQuoteAmount * 1.001),
+											binance.amountToPrecision(symbol, borrowQuoteAmount * 1.0001),
 											binance.priceToPrecision(symbol, takeProfitPrice * 1.0002),
 											{
 												'stopPrice': binance.priceToPrecision(symbol, takeProfitPrice),
