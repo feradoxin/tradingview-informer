@@ -134,7 +134,7 @@ app.post('/api/v1/' + quoteAsset + baseAsset, function (req, res) {
 
 		// Long signal confirmed
 		if (signal1 === 'long' && signal2 === 'long' && longPosition !== 'open') {
-			if (balanceBase > 5) { // Check sufficient base balance
+			if (balanceBase > 10) { // Check sufficient base balance
 				(async () => {
 					balanceBase = await binance.fetchBalance().then(res => {
 						return res.free[baseAsset];
@@ -225,7 +225,7 @@ app.post('/api/v1/' + quoteAsset + baseAsset, function (req, res) {
 
 		// Short signal confirmed
 		if (signal1 === 'short' && signal2 === 'short' && shortPosition !== 'open') {
-			if (marginBalanceBase > 5) { // Check sufficient base balance
+			if (marginBalanceBase > 10) { // Check sufficient base balance
 				(async () => {
 					marginBalanceBase = await binance.fetchBalance({ 'marginMode' : marginMode}).then(res => {
 						return res[symbol].free[baseAsset];
