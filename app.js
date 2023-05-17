@@ -165,7 +165,7 @@ app.post('/api/v1/' + quoteAsset + baseAsset, function (req, res) {
 							totalValue = (balanceQuote * quoteAssetPrice) + balanceBase;
 							
 							// Calc trade risk and create SL/TP orders
-							let fromTimestamp = binance.milliseconds() - 1800 * 1000;
+							let fromTimestamp = binance.milliseconds() - 14400 * 1000;
 							binance.fetchOHLCV(symbol, timeframe, fromTimestamp, 4).then(a => {
 								let candleLows = [a[0][3],a[1][3],a[2][3],a[3][3]]
 								let rangeLow = candleLows.sort()[0];
@@ -246,7 +246,7 @@ app.post('/api/v1/' + quoteAsset + baseAsset, function (req, res) {
 								marginTotalValue = (marginBalanceQuote * quoteAssetPrice) + marginBalanceBase
 				
 								// Calc range highs and risk value
-								let fromTimestamp = binance.milliseconds() - 1800 * 1000;
+								let fromTimestamp = binance.milliseconds() - 14400 * 1000;
 								binance.fetchOHLCV(symbol, timeframe, fromTimestamp, 4).then(d => {
 									let candleHighs = [d[0][2],d[1][2],d[2][2],d[3][2]]
 									let rangeHigh = candleHighs.sort()[3];
