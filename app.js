@@ -60,17 +60,26 @@ https.createServer(
 				marginBalanceQuote = marginBalance[symbol].free[quoteAsset];
 				marginBalanceBase = marginBalance[symbol].free[baseAsset];
 				marginInitialValue = marginBalanceBase + (marginBalanceQuote * quoteAssetPrice);
+				totalInitialValue = initialValue + marginInitialValue
 
 				tgbot.telegram.sendMessage(
 					chatId,
 					"<u>INITIAL SPOT BALANCES</u>\n" +
 					"<b>" + quoteAsset + ": </b><pre>" + balanceQuote + "</pre>\n" +
 					"<b>USDT: </b><pre>" + balanceBase + "</pre>\n" +
-					"<b>Initial Value: </b><pre>" + initialValue + " USDT</pre>\n\n" +
+					"<b>Initial Spot Value: </b><pre>" + initialValue + " USDT</pre>\n\n" +
 					"<u>INITIAL MARGIN BALANCES</u>\n" +
 					"<b>" + quoteAsset + ": </b><pre>" + marginBalanceQuote + "</pre>\n" +
 					"<b>USDT: </b><pre>" + marginBalanceBase + "</pre>\n" +
-					"<b>Initial Value: </b><pre>" + marginInitialValue + " USDT</pre>\n\n",
+					"<b>Initial Margin Value: </b><pre>" + marginInitialValue + " USDT</pre>\n\n" +
+					"<b>Initial Account Value: </b><pre>" + totalInitialValue + " USDT</pre>\n\n\n" +
+					"<u>TRADE SETTINGS</u>/n" +
+					"<b>Long Leverage: </b><pre>" + longLeverage + "</pre>\n" +
+					"<b>Short Leverage: </b><pre>" + shortLeverage + "</pre>\n" +
+					"<b>Stop-loss Factor: </b><pre>" + riskFactor + "</pre>\n" +
+					"<b>Take-profit Factor: </b><pre>" + takeProfitFactor + "</pre>\n" +
+					"<b>Tick Duration: </b><pre>" + tick + "s</pre>\n" +
+					"<b>Candle Interval: </b><pre>" + timeframe + "</pre>\n",
 					{ parse_mode : 'HTML' }
 				)
 			});
