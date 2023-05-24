@@ -38,12 +38,12 @@ https.createServer(
     console.log("HTTPS Express server running on port 443...");
     tgbot.telegram.sendMessage(
         chatId,
-        "MP Auto-Trader started.\n" +
-        "Awaiting signals from Tradingview.\n\n" +
+        "MP Auto-Trader started!\n" +
+        "Awaiting signals from Tradingview....\n\n" +
         "<u><b>TRADING: MARKETS CONNECTED</b></u>\n" +
-        "<pre>[1] BINANCE:" + quoteAsset + baseAsset + "</pre>\n\n" +
+        "<pre>BINANCE:" + quoteAsset + baseAsset + "</pre>\n\n" +
 		"Chart: https://www.tradingview.com/chart/w9Jx4CUu/",
-        { parse_mode : 'HTML' , disable_web_page_preview : true }
+        { parse_mode : 'HTML' }
     );
 	// Initial balance update to global vars
 	binance.fetchBalance({ 'marginMode' : marginMode }).then(marginBalance => {
