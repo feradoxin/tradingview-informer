@@ -67,13 +67,13 @@ https.createServer(
 					"<u>INITIAL SPOT BALANCES</u>\n" +
 					"<b>" + quoteAsset + ": </b><pre>" + balanceQuote + "</pre>\n" +
 					"<b>USDT: </b><pre>" + balanceBase + "</pre>\n" +
-					"<b>Initial Spot Value: </b><pre>" + initialValue + " USDT</pre>\n\n" +
+					"<b>Initial Spot Value: </b><pre>" + initialValue.toFixed(4) + " USDT</pre>\n\n" +
 					"<u>INITIAL MARGIN BALANCES</u>\n" +
 					"<b>" + quoteAsset + ": </b><pre>" + marginBalanceQuote + "</pre>\n" +
 					"<b>USDT: </b><pre>" + marginBalanceBase + "</pre>\n" +
-					"<b>Initial Margin Value: </b><pre>" + marginInitialValue + " USDT</pre>\n\n" +
-					"<b>Initial Account Value: </b><pre>" + totalInitialValue + " USDT</pre>\n\n\n" +
-					"<u>TRADE SETTINGS</u>/n" +
+					"<b>Initial Margin Value: </b><pre>" + marginInitialValue.toFixed(4) + " USDT</pre>\n\n" +
+					"<b>Initial Account Value: </b><pre>" + totalInitialValue.toFixed(4) + " USDT</pre>\n\n\n" +
+					"<u>TRADE SETTINGS</u>\n" +
 					"<b>Long Leverage: </b><pre>" + longLeverage + "</pre>\n" +
 					"<b>Short Leverage: </b><pre>" + shortLeverage + "</pre>\n" +
 					"<b>Stop-loss Factor: </b><pre>" + riskFactor + "</pre>\n" +
@@ -377,7 +377,7 @@ setInterval(() => {
 						"<u>SPOT BALANCES UPDATE</u>\n" +
 						"<b>" + quoteAsset + ": </b><pre>" + balanceQuote + "</pre>\n" +
 						"<b>USDT: </b><pre>" + balanceBase + "</pre>\n" +
-						"<b>Total Value: </b><pre>" + totalValue + " USDT</pre>\n\n" +
+						"<b>Total Value: </b><pre>" + totalValue.toFixed(4) + " USDT</pre>\n\n" +
 						"<b>P&L: </b>" + pnl + "%",
 						{ parse_mode : 'HTML' }
 					)
@@ -401,7 +401,7 @@ setInterval(() => {
 							"<u>SPOT BALANCES UPDATE</u>\n" +
 							"<b>" + quoteAsset + ": </b><pre>" + balanceQuote + "</pre>\n" +
 							"<b>USDT: </b><pre>" + balanceBase + "</pre>\n" +
-							"<b>Total Value: </b><pre>" + totalValue + " USDT</pre>\n\n" +
+							"<b>Total Value: </b><pre>" + totalValue.toFixed(4) + " USDT</pre>\n\n" +
 							"<b>P&L: </b>" + pnl + "%",
 							{ parse_mode : 'HTML' }
 						)
@@ -439,7 +439,7 @@ setInterval(() => {
 									"<u>MARGIN BALANCES UPDATE</u>\n" +
 									"<b>" + quoteAsset + ": </b><pre>" + marginBalanceQuote + "</pre>\n" +
 									"<b>USDT: </b><pre>" + marginBalanceBase + "</pre>\n" +
-									"<b>Total Value: </b><pre>" + marginTotalValue + " USDT</pre>\n\n" +
+									"<b>Total Value: </b><pre>" + marginTotalValue.toFixed(4) + " USDT</pre>\n\n" +
 									"<b>P&L: </b>" + pnl + "%",
 									{ parse_mode : 'HTML' }
 								)
@@ -476,7 +476,7 @@ setInterval(() => {
 									"<u>MARGIN BALANCES UPDATE</u>\n" +
 									"<b>" + quoteAsset + ": </b><pre>" + marginBalanceQuote + "</pre>\n" +
 									"<b>USDT: </b><pre>" + marginBalanceBase + "</pre>\n" +
-									"<b>Total Value: </b><pre>" + marginTotalValue + " USDT</pre>\n\n" +
+									"<b>Total Value: </b><pre>" + marginTotalValue.toFixed(4) + " USDT</pre>\n\n" +
 									"<b>P&L: </b>" + pnl + "%",
 									{ parse_mode : 'HTML' }
 								)
