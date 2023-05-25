@@ -15,7 +15,7 @@ const shortLeverage = 1; 		// Leverage on short orders
 const quoteAsset = 'BTC';		// Asset to buy/sell, e.g. ETH, BTC, BAT
 const baseAsset = 'USDT';		// Currency asset used to buy/sell, e.g. USDT, USDC, BTC
 const riskFactor = 1.25;			// Risk factor to stop-loss
-const takeProfitFactor = 2.5;		// Risk factor to take-profit
+const takeProfitFactor = 2.25;		// Risk factor to take-profit
 const marginMode = 'isolated';	// Margin market type: 'isolated' or 'cross'
 const tick = 10;				// Update interval in seconds, default 10s to reduce API rate
 const timeframe = '1h';			// Candle timeframe interval, e.g. 5m, 15m, 1h, 4h
@@ -60,7 +60,7 @@ https.createServer(
 				marginBalanceQuote = marginBalance[symbol].free[quoteAsset];
 				marginBalanceBase = marginBalance[symbol].free[baseAsset];
 				marginInitialValue = marginBalanceBase + (marginBalanceQuote * quoteAssetPrice);
-				totalInitialValue = initialValue + marginInitialValue
+				totalInitialValue = initialValue + marginInitialValue;
 
 				tgbot.telegram.sendMessage(
 					chatId,
@@ -76,6 +76,7 @@ https.createServer(
 					"<u>TRADE SETTINGS</u>\n" +
 					"<b>Long Leverage: </b><pre>" + longLeverage + "</pre>\n" +
 					"<b>Short Leverage: </b><pre>" + shortLeverage + "</pre>\n" +
+					"<b>Margin-mode: </b><pre>" + marginMode + "</pre>\n" +
 					"<b>Stop-loss Factor: </b><pre>" + riskFactor + "</pre>\n" +
 					"<b>Take-profit Factor: </b><pre>" + takeProfitFactor + "</pre>\n" +
 					"<b>Tick Duration: </b><pre>" + tick + "s</pre>\n" +
@@ -174,9 +175,9 @@ app.post('/api/v1/' + quoteAsset + baseAsset, function (req, res) {
 							totalValue = (balanceQuote * quoteAssetPrice) + balanceBase;
 							
 							// Calc trade risk and create SL/TP orders
-							let fromTimestamp = binance.milliseconds() - 14400 * 1000;
-							binance.fetchOHLCV(symbol, timeframe, fromTimestamp, 4).then(a => {
-								let candleLows = [a[0][3],a[1][3],a[2][3],a[3][3]]
+							let fromTimestamp = binance.milliseconds() - 18000 * 1000;
+							binance.fetchOHLCV(symbol, timeframe, fromTimestamp, 5).then(a => {
+								let candleLows = [a[0][3],a[1][3],a[2][3],a[3][3],a[4][3]]
 								let rangeLow = candleLows.sort()[0];
 								let risk = quoteAssetPrice - rangeLow
 								let stopLossPrice = quoteAssetPrice - (risk * riskFactor)
@@ -209,11 +210,7 @@ app.post('/api/v1/' + quoteAsset + baseAsset, function (req, res) {
 										"<u>TAKE PROFIT OPENED</u>\n" +
 										"<b>Order ID: </b><pre>" + longTpOrderId + "</pre>\n" + 
 										"<b>TP Price: </b><pre>" + tpOrder.price + " USDT</pre>\n" +
-										"<b>Quantity: </b><pre>" + tpOrder.origQty + "</pre>\n\n" +
-										"<u>SPOT BALANCES UPDATE</u>\n" +
-										"<b>" + quoteAsset + ": </b><pre>" + balanceQuote + "</pre>\n" +
-										"<b>USDT: </b><pre>" + balanceBase + "</pre>\n" +
-										"<b>Total Value: </b><pre>" + totalValue + "</pre>",
+										"<b>Quantity: </b><pre>" + tpOrder.origQty + "</pre>\n\n",
 										{ parse_mode : 'HTML' }
 									)
 								})
@@ -255,10 +252,10 @@ app.post('/api/v1/' + quoteAsset + baseAsset, function (req, res) {
 								marginTotalValue = (marginBalanceQuote * quoteAssetPrice) + marginBalanceBase
 				
 								// Calc range highs and risk value
-								let fromTimestamp = binance.milliseconds() - 14400 * 1000;
-								binance.fetchOHLCV(symbol, timeframe, fromTimestamp, 4).then(d => {
-									let candleHighs = [d[0][2],d[1][2],d[2][2],d[3][2]]
-									let rangeHigh = candleHighs.sort()[3];
+								let fromTimestamp = binance.milliseconds() - 18000 * 1000;
+								binance.fetchOHLCV(symbol, timeframe, fromTimestamp, 5).then(d => {
+									let candleHighs = [d[0][2],d[1][2],d[2][2],d[3][2],d[4][2]]
+									let rangeHigh = candleHighs.sort()[4];
 									let risk = rangeHigh - quoteAssetPrice
 									let stopLossPrice = quoteAssetPrice + (risk * riskFactor)
 									let takeProfitPrice = quoteAssetPrice - (risk * takeProfitFactor)
